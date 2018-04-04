@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS user_login_idx ON users (login);

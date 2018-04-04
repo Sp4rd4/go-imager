@@ -7,15 +7,14 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/sp4rd4/go-imager/services/images/db"
-	"github.com/sp4rd4/go-imager/services/images/server"
+	"github.com/sp4rd4/go-imager/services/auth/db"
+	"github.com/sp4rd4/go-imager/services/auth/server"
 	goji "goji.io"
 	"goji.io/pat"
 )
 
 func main() {
 	dbAddress := os.Getenv("DATABSE_URL")
-	staticStoragePath := os.Getenv("STATIC_STORAGE_PATH")
 	serverHost := os.Getenv("HOST")
 	migrationsFolder := os.Getenv("MIGRATIONS_FOLDER")
 	var err error
@@ -35,14 +34,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	imageServer, err := server.NewLocalImageServer(storage, staticStoragePath, log)
+	imageServer, err := server.NewJWTServer(storage, log)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	mux := goji.NewMux()
-	mux.Handle(pat.Get("/images"), wrapMiddleware(imageServer.ListImages, 1))
-	mux.Handle(pat.Post("/images"), wrapMiddleware(imageServer.PostImage, 1))
+	mux.Handle(pat.Post("/sign_in"), wrapMiddleware(imageServer.ListImages))
+	mux.Handle(pat.Post("/sign_up"), wrapMiddleware(imageServer.PostImage))
+
 	srv := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
@@ -53,6 +53,6 @@ func main() {
 	log.Fatal(srv.ListenAndServe())
 }
 
-func wrapMiddleware(next func(http.ResponseWriter, *http.Request), user_id int) http.Handler {
-	return server.RequestGUID(server.CheckJWT(http.HandlerFunc(next), 1))
+func wrapMiddleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
+	return server.RequestGUID(http.HandlerFunc(next))
 }
