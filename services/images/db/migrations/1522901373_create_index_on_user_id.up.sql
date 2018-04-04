@@ -1,1 +1,0 @@
-CREATE INDEX IF NOT EXISTS image_user_idx ON images (user_id);

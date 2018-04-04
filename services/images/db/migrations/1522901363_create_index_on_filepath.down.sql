@@ -1,1 +1,0 @@
-DROP INDEX IF EXISTS image_filepath_idx;

@@ -1,4 +1,4 @@
-package db
+package utils
 
 import (
 	"errors"
@@ -11,16 +11,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Storage interface {
-	CreateUser(u *User) error
-	LoadUserByLogin(login string) (*User, error)
-}
-
-type DB struct {
-	*sqlx.DB
-}
-
-func Open(address, migrations string) (*DB, error) {
+func OpenDB(address, migrations string) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("postgres", address)
 	if err != nil {
 		return nil, err
@@ -37,6 +28,9 @@ func Open(address, migrations string) (*DB, error) {
 		return nil, errors.New("Unable to access migrations folder")
 	}
 	m, err := migrate.NewWithDatabaseInstance("file://"+migrations, "postgres", driver)
-	m.Up()
-	return &DB{db}, nil
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return nil, err
+	}
+	return db, nil
 }

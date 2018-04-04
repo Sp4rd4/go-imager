@@ -1,12 +1,23 @@
-package db
+package images
 
 import (
 	"errors"
+
+	"github.com/jmoiron/sqlx"
 )
+
+type Storage interface {
+	InsertImage(img *Image) error
+	SelectImages(images *[]Image, limit, offset int, userId uint64) error
+}
+
+type DB struct {
+	*sqlx.DB
+}
 
 type Image struct {
 	Filename string `json:"filename" db:"filename"`
-	UserId   int    `json:"-" db:"user_id"`
+	UserId   uint64 `json:"-" db:"user_id"`
 }
 
 func (db *DB) InsertImage(img *Image) error {
@@ -31,21 +42,19 @@ func (db *DB) InsertImage(img *Image) error {
 	return err
 }
 
-func (db *DB) SelectImages(userId, limit, offset int) ([]Image, error) {
+func (db *DB) SelectImages(images *[]Image, limit, offset int, userId uint64) error {
 	qStr := `SELECT * FROM images WHERE user_id=$1 ORDER BY filename OFFSET $2`
 	params := make([]interface{}, 2, 3)
 	params[0] = userId
 	params[1] = offset
-
 	if limit > 0 {
 		qStr += `LIMIT $3`
 		params = append(params, limit)
 	}
 
-	images := []Image{}
-	err := db.Select(&images, qStr, params...)
+	err := db.Select(images, qStr, params...)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return images, nil
+	return nil
 }
