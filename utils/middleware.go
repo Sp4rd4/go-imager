@@ -38,11 +38,15 @@ func Logger(logger *log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			guid, _ := r.Context().Value(RequestGUIDKey).(string)
+			remoteAddr := r.RemoteAddr
+			if r.Header.Get("X-Real-IP") != "" {
+				remoteAddr = r.Header.Get("X-Real-IP")
+			}
 			requestLogger := logger.WithFields(log.Fields{
 				"request_id":  guid,
 				"method":      r.Method,
 				"url":         r.URL.String(),
-				"remote_addr": r.RemoteAddr,
+				"remote_addr": remoteAddr,
 			})
 
 			timeStart := time.Now()

@@ -101,7 +101,6 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	guid, _ := ctx.Value(utils.RequestGUIDKey).(string)
 	requestLogger := is.log.WithFields(log.Fields{"request_id": guid})
-
 	userId, err := extracrtUserId(ctx)
 	if err != nil {
 		requestLogger.Warn(err)
