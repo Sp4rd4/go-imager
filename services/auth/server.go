@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	jwt "github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
 	"github.com/sp4rd4/go-imager/utils"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -58,7 +58,7 @@ func (is *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 		utils.JsonResponse(w, http.StatusConflict, `{"error":"Login already taken"}`)
 		return
 	} else if err != sql.ErrNoRows {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
 		return
 	}
@@ -66,7 +66,7 @@ func (is *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 
 	hash, err := HashPassword(r.FormValue("password"))
 	if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
 		return
 	}
@@ -77,14 +77,14 @@ func (is *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 	}
 	err = is.storage.CreateUser(user)
 	if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
 		return
 	}
 
 	err = reponseJWTToken(user, is.tokenExpiration, is.issuer, is.secret, w)
 	if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
@@ -100,14 +100,14 @@ func (is *JWTServer) IssueTokenExistingUser(w http.ResponseWriter, r *http.Reque
 		utils.JsonResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`)
 		return
 	} else if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 
 	err = reponseJWTToken(user, is.tokenExpiration, is.issuer, is.secret, w)
 	if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}

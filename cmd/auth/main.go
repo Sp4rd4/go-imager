@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/sp4rd4/go-imager/services/auth"
 	"github.com/sp4rd4/go-imager/utils"
 	goji "goji.io"
@@ -61,7 +61,7 @@ func main() {
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Post("/users/sign_in"), imageServer.IssueTokenExistingUser)
 	mux.HandleFunc(pat.Post("/users/sign_up"), imageServer.IssueTokenNewUser)
-	mux.Use(utils.RequestGUID)
+	mux.Use(utils.RequestGUID(logger))
 	mux.Use(utils.Logger(logger))
 
 	srv := &http.Server{

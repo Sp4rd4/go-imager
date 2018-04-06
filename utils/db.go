@@ -16,21 +16,34 @@ func OpenDB(address, migrations string) (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
 	fileInfo, err := os.Stat(migrations)
 	if err != nil {
+		db.Close()
 		return nil, err
 	}
 	if !fileInfo.IsDir() {
+		db.Close()
 		return nil, errors.New("Unable to load migrationsfolder")
 	}
-	if err != nil {
-		return nil, errors.New("Unable to access migrations folder")
-	}
+
 	m, err := migrate.NewWithDatabaseInstance("file://"+migrations, "postgres", driver)
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil {
+		db.Close()
 		return nil, err
 	}
+
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		db.Close()
+		return nil, err
+	}
+
 	return db, nil
 }

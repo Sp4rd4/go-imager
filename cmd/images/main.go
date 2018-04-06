@@ -6,12 +6,14 @@ import (
 	"path/filepath"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/sp4rd4/go-imager/services/images"
 	"github.com/sp4rd4/go-imager/utils"
 	goji "goji.io"
 	"goji.io/pat"
 )
+
+var _ images.User = &utils.Token{}
 
 func main() {
 	logger := log.New()
@@ -49,6 +51,9 @@ func main() {
 
 	conn, err := utils.OpenDB(dbAddress, migrationsFolder)
 	if err != nil {
+		if conn != nil {
+			conn.Close()
+		}
 		log.Fatal(err)
 	}
 	storage := &images.DB{DB: conn}
@@ -61,7 +66,7 @@ func main() {
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Get("/images"), imageServer.ListImages)
 	mux.HandleFunc(pat.Post("/images"), imageServer.PostImage)
-	mux.Use(utils.RequestGUID)
+	mux.Use(utils.RequestGUID(logger))
 	mux.Use(utils.Logger(logger))
 	mux.Use(utils.CheckJWT([]byte(secret), issuer, logger))
 

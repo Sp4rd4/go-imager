@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/oklog/ulid"
+	log "github.com/sirupsen/logrus"
 )
 
 const RequestGUIDKey = "guid"
@@ -23,15 +23,24 @@ type AuthTokenClaims struct {
 	jwt.StandardClaims
 }
 
-func RequestGUID(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		now := time.Now()
-		entropy := rand.New(rand.NewSource(now.UnixNano()))
-		ulid := ulid.MustNew(ulid.Timestamp(now), entropy)
-		ctx := context.WithValue(r.Context(), RequestGUIDKey, ulid.String())
+type Token jwt.Token
 
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+func RequestGUID(logger *log.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			now := time.Now()
+			entropy := rand.New(rand.NewSource(now.UnixNano()))
+			ulid, err := ulid.New(ulid.Timestamp(now), entropy)
+			if err != nil {
+				logger.Error(err)
+				JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal Server Error"}`)
+				return
+			}
+			ctx := context.WithValue(r.Context(), RequestGUIDKey, ulid.String())
+
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func Logger(logger *log.Logger) func(http.Handler) http.Handler {
@@ -95,6 +104,18 @@ func CheckJWT(secret []byte, issuer string, logger *log.Logger) func(http.Handle
 	}
 }
 
+func (token *Token) Key() string {
+	return RequestUserKey
+}
+
+func (token *Token) Id() uint64 {
+	claims, ok := token.Claims.(*AuthTokenClaims)
+	if token.Valid && ok {
+		return claims.Id
+	}
+	return 0
+}
+
 func fromAuthHeader(r *http.Request) (string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -113,8 +134,7 @@ func jwtErrHandler(w http.ResponseWriter, r *http.Request, logger *log.Logger, e
 	guid, _ := r.Context().Value(RequestGUIDKey).(string)
 	logger.WithFields(log.Fields{
 		"request_id": guid,
-	}).Info(err)
-
+	}).Error(err)
 	JsonResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`)
 }
 
@@ -134,7 +154,7 @@ func checkTokenWithClaims(token *jwt.Token, issuer string) error {
 		return errors.New("Token issuer is wrong")
 	}
 	if !(claims.Id > 0) {
-		return errors.New("Token Id is nil")
+		return errors.New("Id in token is zero")
 	}
 
 	return nil

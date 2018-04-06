@@ -14,9 +14,8 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/oklog/ulid"
+	log "github.com/sirupsen/logrus"
 	"github.com/sp4rd4/go-imager/utils"
 )
 
@@ -29,6 +28,11 @@ type LocalImageServer struct {
 	db                Storage
 	staticsFolderPath string
 	log               *log.Logger
+}
+
+type User interface {
+	Id() uint64
+	Key() string
 }
 
 type imageData struct {
@@ -71,7 +75,7 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	entropy := rand.New(rand.NewSource(now.UnixNano()))
 	ulid, err := ulid.New(ulid.Timestamp(now), entropy)
 	if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
@@ -79,7 +83,7 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	filename := ulid.String() + id.filename
 	err = ioutil.WriteFile(filepath.Join(is.staticsFolderPath, filename), id.data, 0644)
 	if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
@@ -90,7 +94,7 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	}
 	err = is.db.InsertImage(image)
 	if err != nil {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
@@ -125,7 +129,7 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	images := make([]Image, 0)
 	err = is.db.SelectImages(&images, limit, offset, userId)
 	if err != nil && err != sql.ErrNoRows {
-		requestLogger.Warn(err)
+		requestLogger.Error(err)
 		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
@@ -155,10 +159,11 @@ func extractImage(r *http.Request, field string) (*imageData, error) {
 }
 
 func extracrtUserId(ctx context.Context) (uint64, error) {
-	token, okT := ctx.Value(utils.RequestUserKey).(*jwt.Token)
-	claims, okC := token.Claims.(*utils.AuthTokenClaims)
-	if okT && token.Valid && okC && claims.Id > 0 {
-		return claims.Id, nil
+	var user User
+	user, ok := ctx.Value(user.Key()).(User)
+	id := user.Id()
+	if ok && id > 0 {
+		return id, nil
 	} else {
 		return 0, errors.New("No valid user_id provided")
 	}
