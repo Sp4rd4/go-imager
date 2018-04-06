@@ -134,7 +134,7 @@ func jwtErrHandler(w http.ResponseWriter, r *http.Request, logger *log.Logger, e
 	guid, _ := r.Context().Value(RequestGUIDKey).(string)
 	logger.WithFields(log.Fields{
 		"request_id": guid,
-	}).Error(err)
+	}).Warn(err)
 	JsonResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`)
 }
 
