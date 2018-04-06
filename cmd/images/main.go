@@ -13,8 +13,6 @@ import (
 	"goji.io/pat"
 )
 
-var _ images.User = &utils.Token{}
-
 func main() {
 	logger := log.New()
 	log.SetOutput(os.Stdout)
@@ -51,9 +49,7 @@ func main() {
 
 	conn, err := utils.OpenDB(dbAddress, migrationsFolder)
 	if err != nil {
-		if conn != nil {
-			conn.Close()
-		}
+		utils.CloseAndCheck(conn, logger)
 		log.Fatal(err)
 	}
 	storage := &images.DB{DB: conn}
@@ -66,7 +62,7 @@ func main() {
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Get("/images"), imageServer.ListImages)
 	mux.HandleFunc(pat.Post("/images"), imageServer.PostImage)
-	mux.Use(utils.RequestGUID(logger))
+	mux.Use(utils.RequestID(logger))
 	mux.Use(utils.Logger(logger))
 	mux.Use(utils.CheckJWT([]byte(secret), issuer, logger))
 

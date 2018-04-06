@@ -31,7 +31,7 @@ type LocalImageServer struct {
 }
 
 type User interface {
-	Id() uint64
+	ID() uint64
 	Key() string
 }
 
@@ -54,20 +54,20 @@ func NewLocalImageServer(db Storage, staticsFolderPath string, log *log.Logger) 
 
 func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guid, _ := ctx.Value(utils.RequestGUIDKey).(string)
-	requestLogger := is.log.WithFields(log.Fields{"request_id": guid})
+	requestID, _ := ctx.Value(utils.RequestIDKey).(string)
+	requestLogger := is.log.WithFields(log.Fields{"request_id": requestID})
 
-	userId, err := extracrtUserId(ctx)
+	userID, err := extracrtUserID(ctx)
 	if err != nil {
 		requestLogger.Warn(err)
-		utils.JsonResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`)
+		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`)
 		return
 	}
 
 	id, err := extractImage(r, "image")
 	if err != nil {
 		requestLogger.Info(err)
-		utils.JsonResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`)
+		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`)
 		return
 	}
 
@@ -76,26 +76,24 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	ulid, err := ulid.New(ulid.Timestamp(now), entropy)
 	if err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 
 	filename := ulid.String() + id.filename
-	err = ioutil.WriteFile(filepath.Join(is.staticsFolderPath, filename), id.data, 0644)
-	if err != nil {
+	if err = ioutil.WriteFile(filepath.Join(is.staticsFolderPath, filename), id.data, 0644); err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 
 	image := &Image{
 		Filename: filename,
-		UserId:   userId,
+		UserID:   userID,
 	}
-	err = is.db.InsertImage(image)
-	if err != nil {
+	if err = is.db.InsertImage(image); err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -103,12 +101,12 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 
 func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	guid, _ := ctx.Value(utils.RequestGUIDKey).(string)
-	requestLogger := is.log.WithFields(log.Fields{"request_id": guid})
-	userId, err := extracrtUserId(ctx)
+	requestID, _ := ctx.Value(utils.RequestIDKey).(string)
+	requestLogger := is.log.WithFields(log.Fields{"request_id": requestID})
+	userID, err := extracrtUserID(ctx)
 	if err != nil {
 		requestLogger.Warn(err)
-		utils.JsonResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`)
+		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`)
 		return
 	}
 
@@ -127,15 +125,20 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 		offset = 0
 	}
 	images := make([]Image, 0)
-	err = is.db.SelectImages(&images, limit, offset, userId)
+	err = is.db.SelectImages(&images, limit, offset, userID)
 	if err != nil && err != sql.ErrNoRows {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(images)
+
+	if err = json.NewEncoder(w).Encode(images); err != nil {
+		requestLogger.Error(err)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		return
+	}
 }
 
 func extractImage(r *http.Request, field string) (*imageData, error) {
@@ -146,7 +149,7 @@ func extractImage(r *http.Request, field string) (*imageData, error) {
 
 	contentType := info.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "image/") {
-		return nil, errors.New("Content type is incorrect")
+		return nil, errors.New("content type is incorrect")
 	}
 
 	bs, err := ioutil.ReadAll(file)
@@ -158,13 +161,12 @@ func extractImage(r *http.Request, field string) (*imageData, error) {
 	return i, nil
 }
 
-func extracrtUserId(ctx context.Context) (uint64, error) {
+func extracrtUserID(ctx context.Context) (uint64, error) {
 	var user User
 	user, ok := ctx.Value(user.Key()).(User)
-	id := user.Id()
+	id := user.ID()
 	if ok && id > 0 {
 		return id, nil
-	} else {
-		return 0, errors.New("No valid user_id provided")
 	}
+	return 0, errors.New("no valid user_id provided")
 }

@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
 	"github.com/sp4rd4/go-imager/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,52 +15,86 @@ func TestOpenDB(t *testing.T) {
 
 	dbAddress := os.Getenv("DATABASE_URL")
 	if dbAddress == "" {
-		t.Fatalf("Need db link")
-	}
-	migrationsFolder, err := ioutil.TempDir("", "migrations")
-	defer os.RemoveAll(migrationsFolder)
-
-	assert := assert.New(t)
-	db, err := utils.OpenDB("wrong", migrationsFolder)
-	if assert.NotNil(err, "OpenDB should return error for incorrect db link") {
-		assert.Nil(db, "OpenDB should return nil *sqlx.DB for incorrect db link")
+		t.Fatal("Need db link")
 	}
 
-	db, err = utils.OpenDB(dbAddress, "migrationsFolder")
-	if assert.NotNil(err, "OpenDB should return error for missing migrations folder") {
-		assert.Nil(db, "OpenDB should return nil *sqlx.DB for missing migrations folder")
-	}
+	subTestInvalidURL(t)
+	subTestInvalidMigrationFolder(t, dbAddress)
+	subTestValidMigrations(t, dbAddress)
+	subTestInvalidMigrations(t, dbAddress)
+}
 
-	tmsp := time.Now().Unix()
-	createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
-	createMigration(t, migrationsFolder, "second", `CREATE TABLE "users" ("name" varchar);`, tmsp+1)
-	db, err = utils.OpenDB(dbAddress, migrationsFolder)
-	if assert.Nil(err, "OpenDB shouldn't return error with existing valid migrations") {
-		if assert.NotNil(db, "OpenDB should return valid *sqlx.DB with existing invalid migrations") {
-			_, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;")
-			if err != nil {
-				t.Fatalf("Unable to clean db after tests")
-			}
-			db.Close()
+func subTestInvalidURL(t *testing.T) {
+	t.Run("Invalid DB URL", func(t *testing.T) {
+		migrationsFolder, err := ioutil.TempDir("", "migrations")
+		if err != nil {
+			t.Fatal("Unable to create temp dir")
 		}
-	}
+		defer os.RemoveAll(migrationsFolder)
+		db, err := utils.OpenDB("wrong", migrationsFolder)
+		if assert.NotNil(t, err, "OpenDB should return error for incorrect db link") {
+			assert.Nil(t, db, "OpenDB should return nil *sqlx.DB for incorrect db link")
+		}
+	})
+}
 
-	createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
-	createMigration(t, migrationsFolder, "second", `CREATE ms" ("prod");`, tmsp+1)
-	db, err = utils.OpenDB(dbAddress, migrationsFolder)
-	if assert.NotNil(err, "OpenDB should return error with existing invalid migrations") {
-		assert.Nil(db, "OpenDB should return nil *sqlx.DB with existing invalid migrations")
-	}
+func subTestInvalidMigrationFolder(t *testing.T, dbAddress string) {
+	t.Run("Invalid DB URL", func(t *testing.T) {
+		db, err := utils.OpenDB(dbAddress, "migrationsFolder")
+		if assert.NotNil(t, err, "OpenDB should return error for missing migrations folder") {
+			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB for missing migrations folder") {
+				utils.CloseAndCheckTest(t, db)
+			}
+		}
+	})
+}
 
-	db, err = sqlx.Connect("postgres", dbAddress)
-	if err != nil {
-		t.Fatalf("Unable to clean db after tests")
-	}
-	_, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;")
-	if err != nil {
-		t.Fatalf("Unable to clean db after tests")
-	}
-	db.Close()
+func subTestValidMigrations(t *testing.T, dbAddress string) {
+	t.Run("Invalid DB URL", func(t *testing.T) {
+		migrationsFolder, err := ioutil.TempDir("", "migrations")
+		if err != nil {
+			t.Fatal("Unable to create temp dir")
+		}
+		defer os.RemoveAll(migrationsFolder)
+
+		tmsp := time.Now().Unix()
+		createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
+		createMigration(t, migrationsFolder, "second", `CREATE TABLE "users" ("name" varchar);`, tmsp+1)
+
+		db, err := utils.OpenDB(dbAddress, migrationsFolder)
+		if assert.Nil(t, err, "OpenDB shouldn't return error with existing valid migrations") {
+			if assert.NotNil(t, db, "OpenDB should return valid *sqlx.DB with existing invalid migrations") {
+				if _, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
+					t.Fatal("Unable to clean db after tests")
+				}
+				utils.CloseAndCheckTest(t, db)
+			}
+		}
+	})
+}
+
+func subTestInvalidMigrations(t *testing.T, dbAddress string) {
+	t.Run("Invalid DB URL", func(t *testing.T) {
+		migrationsFolder, err := ioutil.TempDir("", "migrations")
+		if err != nil {
+			t.Fatal("Unable to create temp dir")
+		}
+		defer os.RemoveAll(migrationsFolder)
+
+		tmsp := time.Now().Unix()
+		createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
+		createMigration(t, migrationsFolder, "second", `CREATE ms" ("prod");`, tmsp+1)
+
+		db, err := utils.OpenDB(dbAddress, migrationsFolder)
+		if assert.NotNil(t, err, "OpenDB should return error with existing invalid migrations") {
+			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB with existing invalid migrations") {
+				if _, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
+					t.Fatal("Unable to clean db after tests")
+				}
+				utils.CloseAndCheckTest(t, db)
+			}
+		}
+	})
 }
 
 func createMigration(t *testing.T, dir, name, sql string, timestamp int64) {

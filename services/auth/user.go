@@ -19,12 +19,12 @@ type DB struct {
 type User struct {
 	Login        string `json:"login" db:"login"`
 	PasswordHash string `json:"-" db:"password_hash"`
-	Id           uint64 `json:"id" db:"id"`
+	ID           uint64 `json:"id" db:"id"`
 }
 
 func (db *DB) CreateUser(user *User) error {
 	if user.Login == "" || user.PasswordHash == "" {
-		return errors.New("User auth info required")
+		return errors.New("user auth info required")
 	}
 	tx, err := db.Beginx()
 	if err != nil {
@@ -38,9 +38,9 @@ func (db *DB) CreateUser(user *User) error {
 		err = tx.Get(user, `SELECT id FROM users WHERE login=$1`, user.Login)
 	}
 	if err != nil {
-		tx.Rollback()
+		err = tx.Rollback()
 	} else {
-		tx.Commit()
+		err = tx.Commit()
 	}
 
 	return err
@@ -51,8 +51,5 @@ func (db *DB) LoadUserByLogin(user *User) error {
 		return sql.ErrNoRows
 	}
 	err := db.Get(user, `SELECT * FROM users WHERE login=$1`, user.Login)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

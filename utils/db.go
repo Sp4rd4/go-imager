@@ -6,11 +6,15 @@ import (
 
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
+	// DB connection establishing is handled only in this file
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/jmoiron/sqlx"
+	// DB connection establishing is handled only in this file
 	_ "github.com/lib/pq"
 )
 
+// OpenDB opens connection to postgres DB
+// and run migrations from given folder path if there are any not ran before
 func OpenDB(address, migrations string) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("postgres", address)
 	if err != nil {
@@ -19,30 +23,25 @@ func OpenDB(address, migrations string) (*sqlx.DB, error) {
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
-		db.Close()
-		return nil, err
+		return db, err
 	}
 
 	fileInfo, err := os.Stat(migrations)
 	if err != nil {
-		db.Close()
-		return nil, err
+		return db, err
 	}
 	if !fileInfo.IsDir() {
-		db.Close()
-		return nil, errors.New("Unable to load migrationsfolder")
+		return db, errors.New("unable to load migrationsfolder")
 	}
 
 	m, err := migrate.NewWithDatabaseInstance("file://"+migrations, "postgres", driver)
 	if err != nil {
-		db.Close()
-		return nil, err
+		return db, err
 	}
 
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
-		db.Close()
-		return nil, err
+		return db, err
 	}
 
 	return db, nil

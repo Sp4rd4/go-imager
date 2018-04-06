@@ -28,46 +28,45 @@ type JWTServer struct {
 	issuer          string
 }
 
-type AuthToken struct {
+type Token struct {
 	TokenType string `json:"token_type"`
 	Token     string `json:"access_token"`
 }
 
 func NewJWTServer(storage Storage, log *log.Logger, secret []byte, expiration time.Duration, issuer string) (TokenServer, error) {
 	if len(secret) == 0 {
-		return nil, errors.New("No secret")
+		return nil, errors.New("no secret")
 	}
 	if len(issuer) == 0 {
-		return nil, errors.New("No issuer")
+		return nil, errors.New("no issuer")
 	}
 	is := &JWTServer{storage, log, secret, expiration, issuer}
 	return is, nil
 }
 
 func (is *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
-	guid, _ := r.Context().Value(utils.RequestGUIDKey).(string)
-	requestLogger := is.log.WithFields(log.Fields{"request_id": guid})
+	requestID, _ := r.Context().Value(utils.RequestIDKey).(string)
+	requestLogger := is.log.WithFields(log.Fields{"request_id": requestID})
 
 	if r.FormValue("login") == "" || r.FormValue("password") == "" {
-		utils.JsonResponse(w, http.StatusUnprocessableEntity, `{"error":"Wrong credentials"}`)
+		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"Wrong credentials"}`)
 		return
 	}
 	user := &User{Login: r.FormValue("login")}
 	err := is.storage.LoadUserByLogin(user)
 	if err == nil {
-		utils.JsonResponse(w, http.StatusConflict, `{"error":"Login already taken"}`)
+		utils.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`)
 		return
 	} else if err != sql.ErrNoRows {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
 		return
 	}
-	err = nil
 
 	hash, err := HashPassword(r.FormValue("password"))
 	if err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
 		return
 	}
 
@@ -75,40 +74,38 @@ func (is *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 		Login:        r.FormValue("login"),
 		PasswordHash: hash,
 	}
-	err = is.storage.CreateUser(user)
-	if err != nil {
+
+	if err = is.storage.CreateUser(user); err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`)
 		return
 	}
 
-	err = reponseJWTToken(user, is.tokenExpiration, is.issuer, is.secret, w)
-	if err != nil {
+	if err = reponseJWTToken(user, is.tokenExpiration, is.issuer, is.secret, w); err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 }
 
 func (is *JWTServer) IssueTokenExistingUser(w http.ResponseWriter, r *http.Request) {
-	guid, _ := r.Context().Value(utils.RequestGUIDKey).(string)
-	requestLogger := is.log.WithFields(log.Fields{"request_id": guid})
+	requestID, _ := r.Context().Value(utils.RequestIDKey).(string)
+	requestLogger := is.log.WithFields(log.Fields{"request_id": requestID})
 
 	user := &User{Login: r.FormValue("login")}
 	err := is.storage.LoadUserByLogin(user)
 	if err == sql.ErrNoRows || !CheckPasswordHash(r.FormValue("password"), user.PasswordHash) {
-		utils.JsonResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`)
+		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`)
 		return
 	} else if err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 
-	err = reponseJWTToken(user, is.tokenExpiration, is.issuer, is.secret, w)
-	if err != nil {
+	if err := reponseJWTToken(user, is.tokenExpiration, is.issuer, is.secret, w); err != nil {
 		requestLogger.Error(err)
-		utils.JsonResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
 		return
 	}
 }
@@ -133,7 +130,7 @@ func reponseJWTToken(user *User, expiration time.Duration,
 			Issuer:    issuer,
 		},
 		Login: user.Login,
-		Id:    user.Id,
+		ID:    user.ID,
 	}
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
@@ -142,9 +139,9 @@ func reponseJWTToken(user *User, expiration time.Duration,
 
 	output.Header().Set("Content-Type", "application/json")
 	output.WriteHeader(http.StatusCreated)
-	json.NewEncoder(output).Encode(AuthToken{
+	err = json.NewEncoder(output).Encode(Token{
 		Token:     tokenString,
 		TokenType: "Bearer",
 	})
-	return nil
+	return err
 }

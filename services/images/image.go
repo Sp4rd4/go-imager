@@ -8,7 +8,7 @@ import (
 
 type Storage interface {
 	InsertImage(img *Image) error
-	SelectImages(images *[]Image, limit, offset int, userId uint64) error
+	SelectImages(images *[]Image, limit, offset int, userID uint64) error
 }
 
 type DB struct {
@@ -17,14 +17,14 @@ type DB struct {
 
 type Image struct {
 	Filename string `json:"filename" db:"filename"`
-	UserId   uint64 `json:"-" db:"user_id"`
+	UserID   uint64 `json:"-" db:"user_id"`
 }
 
 func (db *DB) InsertImage(img *Image) error {
 	if img == nil {
-		return errors.New("Image required")
+		return errors.New("image required")
 	} else if img.Filename == "" {
-		return errors.New("Image filename required")
+		return errors.New("image filename required")
 	}
 	tx, err := db.Beginx()
 	if err != nil {
@@ -33,19 +33,19 @@ func (db *DB) InsertImage(img *Image) error {
 	_, err = tx.Exec(
 		`INSERT INTO images (filename, user_id) VALUES ($1, $2)`,
 		img.Filename,
-		img.UserId)
+		img.UserID)
 	if err != nil {
-		tx.Rollback()
+		err = tx.Rollback()
 	} else {
-		tx.Commit()
+		err = tx.Commit()
 	}
 	return err
 }
 
-func (db *DB) SelectImages(images *[]Image, limit, offset int, userId uint64) error {
+func (db *DB) SelectImages(images *[]Image, limit, offset int, userID uint64) error {
 	qStr := `SELECT * FROM images WHERE user_id=$1 ORDER BY filename OFFSET $2`
 	params := make([]interface{}, 2, 3)
-	params[0] = userId
+	params[0] = userID
 	params[1] = offset
 	if limit > 0 {
 		qStr += `LIMIT $3`
@@ -53,8 +53,5 @@ func (db *DB) SelectImages(images *[]Image, limit, offset int, userId uint64) er
 	}
 
 	err := db.Select(images, qStr, params...)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

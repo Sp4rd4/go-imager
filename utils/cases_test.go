@@ -39,7 +39,7 @@ var examplesJWT = []struct {
 	{
 		&request{"secret", "not_me", time.Now().Add(time.Hour).Unix(), 1},
 		server{"secret", "me"},
-		result{`{"error":"Bad credentials"}`, http.StatusUnauthorized, "Token issuer is wrong"},
+		result{`{"error":"Bad credentials"}`, http.StatusUnauthorized, "token issuer is wrong"},
 	},
 	{
 		&request{"secret", "me", time.Now().Add(-time.Hour).Unix(), 1},
@@ -49,7 +49,7 @@ var examplesJWT = []struct {
 	{
 		&request{"secret", "me", time.Now().Add(time.Hour).Unix(), 0},
 		server{"secret", "me"},
-		result{`{"error":"Bad credentials"}`, http.StatusUnauthorized, "Id in token is zero"},
+		result{`{"error":"Bad credentials"}`, http.StatusUnauthorized, "id in token is zero"},
 	},
 	{
 		&request{},

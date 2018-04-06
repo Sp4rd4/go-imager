@@ -50,6 +50,7 @@ func main() {
 	conn, err := utils.OpenDB(dbAddress, migrationsFolder)
 	if err != nil {
 		logger.Fatal(err)
+		utils.CloseAndCheck(conn, logger)
 	}
 	storage := &auth.DB{DB: conn}
 
@@ -61,7 +62,7 @@ func main() {
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Post("/users/sign_in"), imageServer.IssueTokenExistingUser)
 	mux.HandleFunc(pat.Post("/users/sign_up"), imageServer.IssueTokenNewUser)
-	mux.Use(utils.RequestGUID(logger))
+	mux.Use(utils.RequestID(logger))
 	mux.Use(utils.Logger(logger))
 
 	srv := &http.Server{
