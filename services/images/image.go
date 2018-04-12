@@ -1,3 +1,5 @@
+// Package images creates service that is able to upload image
+// and return list of images uploaded by user
 package images
 
 import (
@@ -6,24 +8,29 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Storage interface defines storage methods needed by images service
 type Storage interface {
-	InsertImage(img *Image) error
-	SelectImages(images *[]Image, limit, offset int, userID uint64) error
+	AddImage(img *Image) error
+	LoadImages(images *[]Image, limit, offset, userID uint64) error
 }
 
+// DB type wraps *sqlx.DB for images-specific contex
 type DB struct {
 	*sqlx.DB
 }
 
+// Image describes image data that is stored in database
 type Image struct {
 	Filename string `json:"filename" db:"filename"`
 	UserID   uint64 `json:"-" db:"user_id"`
 }
 
-func (db *DB) InsertImage(img *Image) error {
+// AddImage insert Image into database
+func (db *DB) AddImage(img *Image) error {
 	if img == nil {
 		return errors.New("image required")
-	} else if img.Filename == "" {
+	}
+	if img.Filename == "" {
 		return errors.New("image filename required")
 	}
 	tx, err := db.Beginx()
@@ -42,7 +49,8 @@ func (db *DB) InsertImage(img *Image) error {
 	return err
 }
 
-func (db *DB) SelectImages(images *[]Image, limit, offset int, userID uint64) error {
+// LoadImages selects Images from database
+func (db *DB) LoadImages(images *[]Image, limit, offset, userID uint64) error {
 	qStr := `SELECT * FROM images WHERE user_id=$1 ORDER BY filename OFFSET $2`
 	params := make([]interface{}, 2, 3)
 	params[0] = userID

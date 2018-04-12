@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/sp4rd4/go-imager/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -17,6 +18,14 @@ func TestOpenDB(t *testing.T) {
 	if dbAddress == "" {
 		t.Fatal("Need db link")
 	}
+	db, err := sqlx.Connect("postgres", dbAddress)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
+		t.Fatal("Unable to clean db before tests")
+	}
+	utils.CloseAndCheckTest(t, db)
 
 	subTestInvalidURL(t)
 	subTestInvalidMigrationFolder(t, dbAddress)
@@ -39,7 +48,7 @@ func subTestInvalidURL(t *testing.T) {
 }
 
 func subTestInvalidMigrationFolder(t *testing.T, dbAddress string) {
-	t.Run("Invalid DB URL", func(t *testing.T) {
+	t.Run("Invalid Migrations Folder", func(t *testing.T) {
 		db, err := utils.OpenDB(dbAddress, "migrationsFolder")
 		if assert.NotNil(t, err, "OpenDB should return error for missing migrations folder") {
 			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB for missing migrations folder") {
@@ -50,7 +59,7 @@ func subTestInvalidMigrationFolder(t *testing.T, dbAddress string) {
 }
 
 func subTestValidMigrations(t *testing.T, dbAddress string) {
-	t.Run("Invalid DB URL", func(t *testing.T) {
+	t.Run("ValidMigrations", func(t *testing.T) {
 		migrationsFolder, err := ioutil.TempDir("", "migrations")
 		if err != nil {
 			t.Fatal("Unable to create temp dir")
@@ -74,7 +83,7 @@ func subTestValidMigrations(t *testing.T, dbAddress string) {
 }
 
 func subTestInvalidMigrations(t *testing.T, dbAddress string) {
-	t.Run("Invalid DB URL", func(t *testing.T) {
+	t.Run("Invalid existing migrations", func(t *testing.T) {
 		migrationsFolder, err := ioutil.TempDir("", "migrations")
 		if err != nil {
 			t.Fatal("Unable to create temp dir")

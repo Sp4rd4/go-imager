@@ -1,24 +1,60 @@
 package utils_test
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/sp4rd4/go-imager/utils"
 	"github.com/stretchr/testify/assert"
 )
 
+type badResponseWriter struct {
+	http.ResponseWriter
+}
+
+func (b badResponseWriter) Write([]byte) (int, error) {
+	return 0, errors.New("Network failed")
+}
+
 func TestJSONResponse(t *testing.T) {
-	w := httptest.NewRecorder()
-	utils.JSONResponse(w, http.StatusOK, "message")
-	assert := assert.New(t)
-	assert.Equal("application/json", w.Header().Get("Content-Type"), "Mismatching response content type")
-	assert.Equal(http.StatusOK, w.Result().StatusCode, "Mismatching response status code")
-	b, err := ioutil.ReadAll(w.Result().Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal("message", string(b), "Mismatching response body content")
+	logger, hook := test.NewNullLogger()
+
+	t.Run("Able to write response", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		entry := log.NewEntry(logger)
+		utils.JSONResponse(w, http.StatusOK, "message", entry)
+		assert.Equal(t, "application/json", w.Header().Get("Content-Type"), "Mismatching response content type")
+		assert.Equal(t, http.StatusOK, w.Result().StatusCode, "Mismatching response status code")
+		b, err := ioutil.ReadAll(w.Result().Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "message", string(b), "Mismatching response body content")
+		assert.Equal(t, 0, len(hook.Entries))
+		hook.Reset()
+	})
+
+	t.Run("Not able to write response", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		bw := badResponseWriter{w}
+		entry := log.NewEntry(logger)
+		utils.JSONResponse(bw, http.StatusOK, "message", entry)
+		assert.Equal(t, "application/json", bw.Header().Get("Content-Type"), "Mismatching response content type")
+		assert.Equal(t, http.StatusOK, w.Result().StatusCode, "Mismatching response status code")
+		b, err := ioutil.ReadAll(w.Result().Body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, "", string(b), "Mismatching response body content")
+		if assert.Equal(t, 1, len(hook.Entries)) {
+			assert.Equal(t, log.ErrorLevel, hook.Entries[0].Level, "Wrong log entry level")
+			assert.Equal(t, "Network failed", hook.Entries[0].Message, "Wrong log entry message")
+		}
+		hook.Reset()
+	})
 }

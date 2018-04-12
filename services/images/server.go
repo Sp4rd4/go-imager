@@ -30,6 +30,7 @@ type LocalImageServer struct {
 	log               *log.Logger
 }
 
+// User interface
 type User interface {
 	ID() uint64
 	Key() string
@@ -60,14 +61,14 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	userID, err := extracrtUserID(ctx)
 	if err != nil {
 		requestLogger.Warn(err)
-		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`)
+		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`, requestLogger)
 		return
 	}
 
 	id, err := extractImage(r, "image")
 	if err != nil {
 		requestLogger.Info(err)
-		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`)
+		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`, requestLogger)
 		return
 	}
 
@@ -76,14 +77,14 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	ulid, err := ulid.New(ulid.Timestamp(now), entropy)
 	if err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
 		return
 	}
 
 	filename := ulid.String() + id.filename
 	if err = ioutil.WriteFile(filepath.Join(is.staticsFolderPath, filename), id.data, 0644); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
 		return
 	}
 
@@ -91,9 +92,9 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 		Filename: filename,
 		UserID:   userID,
 	}
-	if err = is.db.InsertImage(image); err != nil {
+	if err = is.db.AddImage(image); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -106,29 +107,25 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	userID, err := extracrtUserID(ctx)
 	if err != nil {
 		requestLogger.Warn(err)
-		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`)
+		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`, requestLogger)
 		return
 	}
 
 	params := r.URL.Query()
-	var limit, offset int
+	var limit, offset uint64
 	limitPars, ok := params["limit"]
 	if ok && len(limitPars) > 0 {
-		limit, _ = strconv.Atoi(params["limit"][0])
-	} else {
-		limit = 0
+		limit, _ = strconv.ParseUint(params["limit"][0], 10, 64)
 	}
 	offsetPar, ok := params["offset"]
 	if ok && len(offsetPar) > 0 {
-		offset, _ = strconv.Atoi(params["offset"][0])
-	} else {
-		offset = 0
+		offset, _ = strconv.ParseUint(params["offset"][0], 10, 64)
 	}
 	images := make([]Image, 0)
-	err = is.db.SelectImages(&images, limit, offset, userID)
+	err = is.db.LoadImages(&images, limit, offset, userID)
 	if err != nil && err != sql.ErrNoRows {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -136,7 +133,7 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.NewEncoder(w).Encode(images); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
 		return
 	}
 }
@@ -163,7 +160,7 @@ func extractImage(r *http.Request, field string) (*imageData, error) {
 
 func extracrtUserID(ctx context.Context) (uint64, error) {
 	var user User
-	user, ok := ctx.Value(user.Key()).(User)
+	user, ok := ctx.Value(utils.RequestUserKey).(User)
 	id := user.ID()
 	if ok && id > 0 {
 		return id, nil

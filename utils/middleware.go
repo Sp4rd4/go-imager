@@ -31,7 +31,9 @@ type AuthTokenClaims struct {
 }
 
 // This type allows to implement methods for image.User interface
-type token jwt.Token
+type Token struct {
+	*jwt.Token
+}
 
 // RequestID middleware adds unique request_id into request context
 func RequestID(logger *log.Logger) func(http.Handler) http.Handler {
@@ -42,7 +44,7 @@ func RequestID(logger *log.Logger) func(http.Handler) http.Handler {
 			ulid, err := ulid.New(ulid.Timestamp(now), entropy)
 			if err != nil {
 				logger.Error(err)
-				JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal Server Error"}`)
+				JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal Server Error"}`, log.NewEntry(logger))
 				return
 			}
 			ctx := context.WithValue(r.Context(), RequestIDKey, ulid.String())
@@ -110,19 +112,19 @@ func CheckJWT(secret []byte, issuer string, logger *log.Logger) func(http.Handle
 				jwtErrHandler(w, r, logger, err)
 				return
 			}
-			t := token(*tkn)
+			t := Token{tkn}
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), RequestUserKey, &t)))
 		})
 	}
 }
 
 // Key return context key for the token
-func (tkn *token) Key() RequestKey {
+func (tkn *Token) Key() RequestKey {
 	return RequestUserKey
 }
 
 // ID returns user id from context value
-func (tkn *token) ID() uint64 {
+func (tkn *Token) ID() uint64 {
 	claims, ok := tkn.Claims.(*AuthTokenClaims)
 	if tkn.Valid && ok {
 		return claims.ID
@@ -146,10 +148,11 @@ func fromAuthHeader(r *http.Request) (string, error) {
 
 func jwtErrHandler(w http.ResponseWriter, r *http.Request, logger *log.Logger, err error) {
 	requestID, _ := r.Context().Value(RequestIDKey).(string)
-	logger.WithFields(log.Fields{
+	requestLogger := logger.WithFields(log.Fields{
 		"request_id": requestID,
-	}).Warn(err)
-	JSONResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`)
+	})
+	requestLogger.Warn(err)
+	JSONResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`, requestLogger)
 }
 
 func checkTokenWithClaims(token *jwt.Token, issuer string) error {

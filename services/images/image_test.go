@@ -4,19 +4,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sp4rd4/go-imager/services/images"
 	"github.com/sp4rd4/go-imager/utils"
 )
-
-func setupDB(t *testing.T) *images.DB {
-	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return &images.DB{DB: db}
-}
 
 func cleanTable(t *testing.T, db *images.DB) {
 	if _, err := db.Exec(`TRUNCATE TABLE "images" CASCADE;`); err != nil {
@@ -24,35 +17,57 @@ func cleanTable(t *testing.T, db *images.DB) {
 	}
 }
 
-func TestInsertImage(t *testing.T) {
-	db := setupDB(t)
-	defer cleanTable(t, db)
-	img := images.Image{
-		Filename: "test",
-		UserID:   1,
+func TestAddImage(t *testing.T) {
+	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	err := db.InsertImage(&img)
-	assert := assert.New(t)
-	if assert.Nil(err) {
-		var count int
-		db.Get(&count, `SELECT count(*) FROM images;`)
-		assert.Equal(1, count)
-		var imgActual images.Image
-		db.Get(&imgActual, `SELECT * FROM images LIMIT 1;`)
-		assert.Equal(img, imgActual)
+	imgDB := &images.DB{DB: db}
+	for _, ex := range examplesAddImage {
+		t.Run(ex.name, func(t *testing.T) {
+			var err error
+			for _, img := range ex.input {
+				err = imgDB.AddImage(img)
+			}
+			assert.EqualValues(t, ex.err, err, "Error should be as expected")
+			cleanTable(t, imgDB)
+		})
 	}
+	cleanDB(t, db)
 }
 
-func TestInsertIncorrectImage(t *testing.T) {
-	db := setupDB(t)
-	defer cleanTable(t, db)
-	img := images.Image{
-		Filename: "",
-		UserID:   1,
+func TestLoadImages(t *testing.T) {
+	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	err := db.InsertImage(&img)
-	assert := assert.New(t)
-	if assert.NotNil(err) {
-		assert.Equal("Image required", err.Error)
+	imgDB := &images.DB{DB: db}
+	for _, ex := range examplesLoadImages {
+		t.Run(ex.name, func(t *testing.T) {
+			for _, img := range ex.initial {
+				err = imgDB.AddImage(&img)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			imgs := make([]images.Image, 0)
+			err := imgDB.LoadImages(&imgs, ex.limit, ex.offset, ex.userID)
+			assert.EqualValues(t, ex.err, err, "Error should be as expected")
+			for i, img := range ex.result {
+				if i < len(imgs) {
+					assert.Equalf(t, img, imgs[i], "Loaded Image %d is not as expected", i)
+				} else {
+					t.Errorf("Image %d is absent", i)
+				}
+			}
+			cleanTable(t, imgDB)
+		})
 	}
+	cleanDB(t, db)
+}
+func cleanDB(t *testing.T, db *sqlx.DB) {
+	if _, err := db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
+		t.Fatal("Unable to clean db before tests")
+	}
+	utils.CloseAndCheckTest(t, db)
 }
