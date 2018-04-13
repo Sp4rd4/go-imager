@@ -75,8 +75,8 @@ func TestLocalImageServerWithStaticFolder(t *testing.T) {
 func TestLocalImageServerWithRequestKeys(t *testing.T) {
 	examples := []struct {
 		name    string
-		user    utils.RequestKey
-		id      utils.RequestKey
+		user    util.RequestKey
+		id      util.RequestKey
 		wantErr error
 	}{
 		{"Empty key", "", "adsa", errors.New("key is empty")},
@@ -168,7 +168,7 @@ func TestLocalImageServerPostImage(t *testing.T) {
 	}
 }
 
-func generateRequest(t *testing.T, fileType byte, contextVals map[utils.RequestKey]interface{}) *http.Request {
+func generateRequest(t *testing.T, fileType byte, contextVals map[util.RequestKey]interface{}) *http.Request {
 	var req *http.Request
 	var err error
 	if fileType == fileMissing {
@@ -241,6 +241,7 @@ type stubStoreSlice bool
 func (ss stubStoreSlice) AddImage(_ *imgr.Image) (err error) {
 	return
 }
+
 func (ss stubStoreSlice) LoadImages(in *[]imgr.Image, _, _, _ uint64) (err error) {
 	if !ss {
 		err = errors.New("storage error")

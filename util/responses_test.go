@@ -1,4 +1,4 @@
-package utils_test
+package util_test
 
 import (
 	"errors"
@@ -9,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/sp4rd4/go-imager/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +25,7 @@ func TestJSONResponse(t *testing.T) {
 	w := httptest.NewRecorder()
 	entry := log.NewEntry(logger)
 	t.Run("Able to write response", func(t *testing.T) {
-		utils.JSONResponse(w, http.StatusOK, "message", entry)
+		util.JSONResponse(w, http.StatusOK, "message", entry)
 		assert.Equal(t, "application/json", w.Header().Get("Content-Type"), "Mismatching response content type")
 		assert.Equal(t, http.StatusOK, w.Result().StatusCode, "Mismatching response status code")
 		b, err := ioutil.ReadAll(w.Result().Body)
@@ -42,7 +41,7 @@ func TestJSONResponse(t *testing.T) {
 	bw := badResponseWriter{w}
 	entry = log.NewEntry(logger)
 	t.Run("Not able to write response", func(t *testing.T) {
-		utils.JSONResponse(bw, http.StatusOK, "message", entry)
+		util.JSONResponse(bw, http.StatusOK, "message", entry)
 		assert.Equal(t, "application/json", bw.Header().Get("Content-Type"), "Mismatching response content type")
 		assert.Equal(t, http.StatusOK, w.Result().StatusCode, "Mismatching response status code")
 		b, err := ioutil.ReadAll(w.Result().Body)

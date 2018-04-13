@@ -47,10 +47,10 @@ func main() {
 		}
 	}
 
-	conn, err := utils.OpenDB(dbAddress, migrationsFolder)
+	conn, err := util.OpenDB(dbAddress, migrationsFolder)
 	if err != nil {
 		log.Fatal(err)
-		utils.CloseAndCheck(conn, log)
+		util.CloseAndCheck(conn, log)
 	}
 	storage := &auth.DB{DB: conn}
 
@@ -66,10 +66,12 @@ func main() {
 	}
 
 	mux := goji.NewMux()
-	mux.HandleFunc(pat.Post("/users/sign_in"), tokenServer.IssueTokenExistingUser)
-	mux.HandleFunc(pat.Post("/users/sign_up"), tokenServer.IssueTokenNewUser)
-	mux.Use(utils.RequestID(log))
-	mux.Use(utils.Logger(log))
+	users := goji.SubMux()
+	users.HandleFunc(pat.Post("/sign_in"), tokenServer.IssueTokenExistingUser)
+	users.HandleFunc(pat.Post("/sign_up"), tokenServer.IssueTokenNewUser)
+	users.Use(util.RequestID(log))
+	users.Use(util.Logger(log))
+	mux.Handle(pat.New("/users/*"), users)
 
 	srv := &http.Server{
 		ReadTimeout:  durations["HTTP_READ_TIMEOUT"],

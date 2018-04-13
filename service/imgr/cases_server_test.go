@@ -15,12 +15,12 @@ const (
 
 type requestPost struct {
 	file    byte
-	context map[utils.RequestKey]interface{}
+	context map[util.RequestKey]interface{}
 }
 type requestList struct {
 	limit   uint64
 	offset  uint64
-	context map[utils.RequestKey]interface{}
+	context map[util.RequestKey]interface{}
 }
 
 type want struct {
@@ -48,7 +48,7 @@ var examplesLocalImageServerPostImage = []struct {
 		storage:    true,
 		requestPost: requestPost{
 			file:    fileValid,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			statusCode: http.StatusCreated,
@@ -60,7 +60,7 @@ var examplesLocalImageServerPostImage = []struct {
 		storage:    true,
 		requestPost: requestPost{
 			file:    fileValid,
-			context: map[utils.RequestKey]interface{}{},
+			context: map[util.RequestKey]interface{}{},
 		},
 		want: want{
 			body:       `{"error":"Unauthorized"}`,
@@ -74,7 +74,7 @@ var examplesLocalImageServerPostImage = []struct {
 		storage:    true,
 		requestPost: requestPost{
 			file:    fileMissing,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			body:       `{"error":"No image is present"}`,
@@ -88,7 +88,7 @@ var examplesLocalImageServerPostImage = []struct {
 		storage:    true,
 		requestPost: requestPost{
 			file:    fileNonImage,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			body:       `{"error":"No image is present"}`,
@@ -102,7 +102,7 @@ var examplesLocalImageServerPostImage = []struct {
 		storage:    true,
 		requestPost: requestPost{
 			file:    fileBroken,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			body:       `{"error":"No image is present"}`,
@@ -116,7 +116,7 @@ var examplesLocalImageServerPostImage = []struct {
 		storage:    true,
 		requestPost: requestPost{
 			file:    fileValid,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			body:       `{"error":"Internal server error"}`,
@@ -130,7 +130,7 @@ var examplesLocalImageServerPostImage = []struct {
 		storage:    false,
 		requestPost: requestPost{
 			file:    fileValid,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			body:       `{"error":"Internal server error"}`,
@@ -150,7 +150,7 @@ var examplesLocalImageServerListImages = []struct {
 		name:    "OK",
 		storage: true,
 		requestList: requestList{
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			statusCode: http.StatusOK,
@@ -162,7 +162,7 @@ var examplesLocalImageServerListImages = []struct {
 		requestList: requestList{
 			offset:  1,
 			limit:   1,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			statusCode: http.StatusOK,
@@ -172,7 +172,7 @@ var examplesLocalImageServerListImages = []struct {
 		name:    "No user",
 		storage: true,
 		requestList: requestList{
-			context: map[utils.RequestKey]interface{}{},
+			context: map[util.RequestKey]interface{}{},
 		},
 		want: want{
 			body:       `{"error":"Unauthorized"}`,
@@ -186,7 +186,7 @@ var examplesLocalImageServerListImages = []struct {
 		requestList: requestList{
 			offset:  1,
 			limit:   6,
-			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
+			context: map[util.RequestKey]interface{}{util.RequestUserKey: stubUser(1)},
 		},
 		want: want{
 			body:       `{"error":"Internal server error"}`,

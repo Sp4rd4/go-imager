@@ -10,7 +10,7 @@ import (
 )
 
 func TestDBCreateUser(t *testing.T) {
-	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
+	db, err := util.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,11 +41,11 @@ func TestDBCreateUser(t *testing.T) {
 			cleanTable(t, atDB)
 		})
 	}
-	utils.CleanDB(t, db)
+	util.CleanDB(t, db)
 }
 
 func TestDBLoadUserByLogin(t *testing.T) {
-	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
+	db, err := util.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestDBLoadUserByLogin(t *testing.T) {
 			cleanTable(t, atDB)
 		})
 	}
-	utils.CleanDB(t, db)
+	util.CleanDB(t, db)
 }
 
 func cleanTable(t *testing.T, db *auth.DB) {

@@ -1,4 +1,4 @@
-package utils_test
+package util_test
 
 import (
 	"net/http"

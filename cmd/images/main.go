@@ -47,9 +47,9 @@ func main() {
 		}
 	}
 
-	conn, err := utils.OpenDB(dbAddress, migrationsFolder)
+	conn, err := util.OpenDB(dbAddress, migrationsFolder)
 	if err != nil {
-		utils.CloseAndCheck(conn, logger)
+		util.CloseAndCheck(conn, logger)
 		log.Fatal(err)
 	}
 	storage := &imgr.DB{DB: conn}
@@ -66,9 +66,9 @@ func main() {
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Get("/images"), imageServer.ListImages)
 	mux.HandleFunc(pat.Post("/images"), imageServer.PostImage)
-	mux.Use(utils.RequestID(logger))
-	mux.Use(utils.Logger(logger))
-	mux.Use(utils.CheckJWT([]byte(secret), issuer, logger))
+	mux.Use(util.RequestID(logger))
+	mux.Use(util.Logger(logger))
+	mux.Use(util.CheckJWT([]byte(secret), issuer, logger))
 
 	srv := &http.Server{
 		ReadTimeout:  durations["HTTP_READ_TIMEOUT"],

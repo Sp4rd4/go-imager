@@ -30,8 +30,8 @@ type LocalImageServer struct {
 	storage        Storage
 	staticPath     string
 	log            *log.Logger
-	requestUserKey utils.RequestKey
-	requestIDKey   utils.RequestKey
+	requestUserKey util.RequestKey
+	requestIDKey   util.RequestKey
 }
 
 // User interface for getting needed user info from context value.
@@ -56,7 +56,7 @@ func NewLocalImageServer(storage Storage, options ...Option) (ImageServer, error
 	log.SetOutput(os.Stdout)
 	log := log.New()
 
-	is := &LocalImageServer{storage, ".", log, utils.RequestUserKey, utils.RequestIDKey}
+	is := &LocalImageServer{storage, ".", log, util.RequestUserKey, util.RequestIDKey}
 	for _, option := range options {
 		if err := option(is); err != nil {
 			return nil, err
@@ -81,8 +81,8 @@ func WithStaticFolder(path string) Option {
 }
 
 // WithRequestKeys is functional option for setting LocalImageServer request_id  and user context key,
-// default keys are utils.RequestIDKey, utils.RequestUserKey.
-func WithRequestKeys(user, id utils.RequestKey) Option {
+// default keys are util.RequestIDKey, util.RequestUserKey.
+func WithRequestKeys(user, id util.RequestKey) Option {
 	return func(is *LocalImageServer) error {
 		if user == "" || id == "" {
 			return errors.New("key is empty")
@@ -113,20 +113,20 @@ func WithLogger(logger *log.Logger) Option {
 // * image (required) POST multipart-data file
 func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	requestID, _ := ctx.Value(utils.RequestIDKey).(string)
+	requestID, _ := ctx.Value(util.RequestIDKey).(string)
 	requestLogger := is.log.WithFields(log.Fields{"request_id": requestID})
 
 	userID, err := extracrtUserID(ctx)
 	if err != nil {
 		requestLogger.Warn(err)
-		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`, requestLogger)
 		return
 	}
 
 	id, err := extractImage(r, requestLogger)
 	if err != nil {
 		requestLogger.Info(err)
-		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`, requestLogger)
 		return
 	}
 
@@ -135,14 +135,14 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	ulid, err := ulid.New(ulid.Timestamp(now), entropy)
 	if err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
 	filename := ulid.String() + id.filename
 	if err = ioutil.WriteFile(filepath.Join(is.staticPath, filename), id.data, 0644); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
@@ -153,11 +153,11 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	if err = is.storage.AddImage(image); err != nil {
 		if errU, ok := err.(ErrUniqueIndexConflict); ok {
 			requestLogger.Error(errU)
-			utils.JSONResponse(w, http.StatusConflict, `{"error":"Image filename is taken"}`, requestLogger)
+			util.JSONResponse(w, http.StatusConflict, `{"error":"Image filename is taken"}`, requestLogger)
 			return
 		}
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -170,12 +170,12 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 // * offset (default: 0) Query parameter that states selection offset of returned selection
 func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	requestID, _ := ctx.Value(utils.RequestIDKey).(string)
+	requestID, _ := ctx.Value(util.RequestIDKey).(string)
 	requestLogger := is.log.WithFields(log.Fields{"request_id": requestID})
 	userID, err := extracrtUserID(ctx)
 	if err != nil {
 		requestLogger.Warn(err)
-		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Unauthorized"}`, requestLogger)
 		return
 	}
 
@@ -186,7 +186,7 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	err = is.storage.LoadImages(&images, limit, offset, userID)
 	if err != nil && err != sql.ErrNoRows {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -194,7 +194,7 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.NewEncoder(w).Encode(images); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 }
@@ -224,7 +224,7 @@ func extractImage(r *http.Request, log *log.Entry) (*imageData, error) {
 }
 
 func extracrtUserID(ctx context.Context) (uint64, error) {
-	if user, ok := ctx.Value(utils.RequestUserKey).(User); ok {
+	if user, ok := ctx.Value(util.RequestUserKey).(User); ok {
 		return user.ID(), nil
 	}
 	return 0, errors.New("no valid user_id provided")

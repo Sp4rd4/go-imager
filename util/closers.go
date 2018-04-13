@@ -1,5 +1,5 @@
-// Package utils contains various shared functionality between services.
-package utils
+// Package util contains various shared functionality between services.
+package util
 
 import (
 	"io"

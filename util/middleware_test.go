@@ -1,4 +1,4 @@
-package utils_test
+package util_test
 
 import (
 	"context"
@@ -15,30 +15,29 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/sp4rd4/go-imager/util"
 )
 
 func TestRequestID(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestID, _ := r.Context().Value(utils.RequestIDKey).(string)
+		requestID, _ := r.Context().Value(util.RequestIDKey).(string)
 		_, err := ulid.Parse(requestID)
 		assert.Nil(t, err, "There should be valid ulid in request")
 	})
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	w := httptest.NewRecorder()
 	log, _ := test.NewNullLogger()
-	utils.RequestID(log)(handler).ServeHTTP(w, req)
+	util.RequestID(log)(handler).ServeHTTP(w, req)
 }
 
 func TestLogger(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	req.RemoteAddr = "localhost"
-	ctx := context.WithValue(req.Context(), utils.RequestIDKey, "requestID")
+	ctx := context.WithValue(req.Context(), util.RequestIDKey, "requestID")
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 	log, hook := test.NewNullLogger()
-	utils.Logger(log)(handler).ServeHTTP(w, req)
+	util.Logger(log)(handler).ServeHTTP(w, req)
 
 	if assert.Equal(t, 2, len(hook.Entries), "There should be valid ulid in request") {
 		assert.Equal(t, "requestID", hook.Entries[0].Data["request_id"], "Wrong first log entry request_id")
@@ -58,7 +57,7 @@ func TestLogger(t *testing.T) {
 func TestCheckJWT(t *testing.T) {
 	log, hook := test.NewNullLogger()
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	ctx := context.WithValue(req.Context(), utils.RequestIDKey, "requestID")
+	ctx := context.WithValue(req.Context(), util.RequestIDKey, "requestID")
 	req = req.WithContext(ctx)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	for _, ex := range examplesJWT {
@@ -81,7 +80,7 @@ func TestCheckJWT(t *testing.T) {
 
 		t.Run(ex.name, func(t *testing.T) {
 
-			utils.CheckJWT([]byte(ex.server.secret), ex.server.issuer, log)(handler).ServeHTTP(w, req)
+			util.CheckJWT([]byte(ex.server.secret), ex.server.issuer, log)(handler).ServeHTTP(w, req)
 			if len(ex.want.logMessage) > 0 && assert.Equal(t, 1, len(hook.Entries), "Should have log entry") {
 				assert.Regexp(
 					t,
@@ -106,7 +105,7 @@ func TestCheckJWT(t *testing.T) {
 
 func generateToken(expires int64, issuer, secret string, id uint64) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
-	token.Claims = &utils.AuthTokenClaims{
+	token.Claims = &util.AuthTokenClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expires,
 			Issuer:    issuer,

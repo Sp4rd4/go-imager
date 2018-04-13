@@ -1,4 +1,4 @@
-package utils_test
+package util_test
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/sp4rd4/go-imager/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +21,7 @@ func TestOpenDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	utils.CleanDB(t, db)
+	util.CleanDB(t, db)
 
 	subTestInvalidURL(t)
 	subTestInvalidMigrationFolder(t, dbAddress)
@@ -38,7 +37,7 @@ func subTestInvalidURL(t *testing.T) {
 	defer os.RemoveAll(migrationsFolder)
 
 	t.Run("Invalid DB URL", func(t *testing.T) {
-		db, err := utils.OpenDB("wrong", migrationsFolder)
+		db, err := util.OpenDB("wrong", migrationsFolder)
 		if assert.NotNil(t, err, "OpenDB should return error for incorrect db link") {
 			assert.Nil(t, db, "OpenDB should return nil *sqlx.DB for incorrect db link")
 		}
@@ -47,10 +46,10 @@ func subTestInvalidURL(t *testing.T) {
 
 func subTestInvalidMigrationFolder(t *testing.T, dbAddress string) {
 	t.Run("Invalid Migrations Folder", func(t *testing.T) {
-		db, err := utils.OpenDB(dbAddress, "migrationsFolder")
+		db, err := util.OpenDB(dbAddress, "migrationsFolder")
 		if assert.NotNil(t, err, "OpenDB should return error for missing migrations folder") {
 			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB for missing migrations folder") {
-				utils.CloseAndCheckTest(t, db)
+				util.CloseAndCheckTest(t, db)
 			}
 		}
 	})
@@ -68,10 +67,10 @@ func subTestValidMigrations(t *testing.T, dbAddress string) {
 	createMigration(t, migrationsFolder, "second", `CREATE TABLE "users" ("name" varchar);`, tmsp+1)
 
 	t.Run("ValidMigrations", func(t *testing.T) {
-		db, err := utils.OpenDB(dbAddress, migrationsFolder)
+		db, err := util.OpenDB(dbAddress, migrationsFolder)
 		if assert.Nil(t, err, "OpenDB shouldn't return error with existing valid migrations") {
 			if assert.NotNil(t, db, "OpenDB should return valid *sqlx.DB with existing invalid migrations") {
-				utils.CleanDB(t, db)
+				util.CleanDB(t, db)
 			}
 		}
 	})
@@ -89,10 +88,10 @@ func subTestInvalidMigrations(t *testing.T, dbAddress string) {
 	createMigration(t, migrationsFolder, "second", `CREATE ms" ("prod");`, tmsp+1)
 
 	t.Run("Invalid existing migrations", func(t *testing.T) {
-		db, err := utils.OpenDB(dbAddress, migrationsFolder)
+		db, err := util.OpenDB(dbAddress, migrationsFolder)
 		if assert.NotNil(t, err, "OpenDB should return error with existing invalid migrations") {
 			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB with existing invalid migrations") {
-				utils.CleanDB(t, db)
+				util.CleanDB(t, db)
 			}
 		}
 	})

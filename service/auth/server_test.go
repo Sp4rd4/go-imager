@@ -45,7 +45,7 @@ func TestNewJWTServer(t *testing.T) {
 func TestJWTServerWithRequestIDKey(t *testing.T) {
 	examples := []struct {
 		name    string
-		key     utils.RequestKey
+		key     util.RequestKey
 		wantErr error
 	}{
 		{"Empty key", "", errors.New("key is empty")},
@@ -218,11 +218,11 @@ func assertOKResponse(t *testing.T, b, secret []byte, issuer string) {
 	if err := json.Unmarshal(b, resp); err != nil {
 		t.Fatal(err)
 	}
-	token, err := jwt.ParseWithClaims(resp.Token, &utils.AuthTokenClaims{}, func(tkn *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(resp.Token, &util.AuthTokenClaims{}, func(tkn *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
 	if assert.Nil(t, err, "No error on parsing should be present") {
-		claims, ok := token.Claims.(*utils.AuthTokenClaims)
+		claims, ok := token.Claims.(*util.AuthTokenClaims)
 		if assert.True(t, ok, "Claims shoud meet required type") && assert.True(t, token.Valid, "Token should be valid") {
 			assert.True(t, claims.VerifyExpiresAt(time.Now().Unix(), true), "Token shouldn't be expired")
 			assert.True(t, claims.VerifyIssuer(issuer, true), "Token should have correct issuer")

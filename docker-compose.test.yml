@@ -16,10 +16,11 @@ services:
     image: postgres:10.3-alpine
     volumes:
       - db:/var/lib/postgresql/data
+      - ./multiple-db:/docker-entrypoint-initdb.d
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
-      POSTGRES_DB: 'test'
+      POSTGRES_MULTIPLE_DATABASES: test,images,users
 
 volumes:
   db:

@@ -30,7 +30,7 @@ type JWTServer struct {
 	secret          []byte
 	tokenExpiration time.Duration
 	issuer          string
-	requestIDKey    utils.RequestKey
+	requestIDKey    util.RequestKey
 }
 
 // Token describes JWTServer response json
@@ -56,7 +56,7 @@ func NewJWTServer(storage Storage, secret []byte, options ...Option) (TokenServe
 	if err != nil {
 		return nil, err
 	}
-	js := &JWTServer{storage, log, secret, duration, "", utils.RequestIDKey}
+	js := &JWTServer{storage, log, secret, duration, "", util.RequestIDKey}
 	for _, option := range options {
 		if err := option(js); err != nil {
 			return nil, err
@@ -66,8 +66,8 @@ func NewJWTServer(storage Storage, secret []byte, options ...Option) (TokenServe
 }
 
 // WithRequestIDKey is functional option for setting JWTServer request_id context key,
-// default key is utils.RequestIDKey.
-func WithRequestIDKey(key utils.RequestKey) Option {
+// default key is util.RequestIDKey.
+func WithRequestIDKey(key util.RequestKey) Option {
 	return func(js *JWTServer) error {
 		if key == "" {
 			return errors.New("key is empty")
@@ -111,29 +111,29 @@ func WithExpiration(expire time.Duration) Option {
 // * login (required) POST form value
 // * password (required) POST form value
 func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
-	requestID, _ := r.Context().Value(utils.RequestIDKey).(string)
+	requestID, _ := r.Context().Value(util.RequestIDKey).(string)
 	requestLogger := js.log.WithFields(log.Fields{"request_id": requestID})
 
 	if r.FormValue("login") == "" || r.FormValue("password") == "" {
-		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"Wrong credentials"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"Wrong credentials"}`, requestLogger)
 		return
 	}
 	user := &User{Login: r.FormValue("login")}
 	err := js.storage.LoadUserByLogin(user)
 	if err == nil {
-		utils.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
+		util.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
 		return
 	}
 	if err != sql.ErrNoRows {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
 	hash, err := HashPassword(r.FormValue("password"))
 	if err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
@@ -143,17 +143,17 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 	}
 	if err = js.storage.CreateUser(user); err != nil {
 		if _, ok := err.(ErrUniqueIndexConflict); ok {
-			utils.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
+			util.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
 			return
 		}
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
 	if err = js.reponseJWTToken(user, w); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 }
@@ -162,29 +162,29 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 // * login (required) POST form value
 // * password (required) POST form value
 func (js *JWTServer) IssueTokenExistingUser(w http.ResponseWriter, r *http.Request) {
-	requestID, _ := r.Context().Value(utils.RequestIDKey).(string)
+	requestID, _ := r.Context().Value(util.RequestIDKey).(string)
 	requestLogger := js.log.WithFields(log.Fields{"request_id": requestID})
 
 	if r.FormValue("password") == "" || r.FormValue("login") == "" {
-		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`, requestLogger)
 		return
 	}
 
 	user := &User{Login: r.FormValue("login")}
 	err := js.storage.LoadUserByLogin(user)
 	if err == sql.ErrNoRows || !CheckPasswordHash(r.FormValue("password"), user.PasswordHash) {
-		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`, requestLogger)
 		return
 	}
 	if err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
 	if err := js.reponseJWTToken(user, w); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
+		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 }
@@ -204,7 +204,7 @@ func CheckPasswordHash(password, hash string) bool {
 func (js *JWTServer) reponseJWTToken(user *User, output http.ResponseWriter) error {
 	expiresAt := time.Now().Add(js.tokenExpiration).Unix()
 	token := jwt.New(jwt.SigningMethodHS256)
-	token.Claims = &utils.AuthTokenClaims{
+	token.Claims = &util.AuthTokenClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiresAt,
 			Issuer:    js.issuer,

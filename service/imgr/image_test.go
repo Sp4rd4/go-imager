@@ -11,7 +11,7 @@ import (
 )
 
 func TestDBAddImage(t *testing.T) {
-	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
+	db, err := util.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,11 +28,11 @@ func TestDBAddImage(t *testing.T) {
 			cleanTable(t, imgDB)
 		})
 	}
-	utils.CleanDB(t, db)
+	util.CleanDB(t, db)
 }
 
 func TestDBLoadImages(t *testing.T) {
-	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
+	db, err := util.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestDBLoadImages(t *testing.T) {
 			cleanTable(t, imgDB)
 		})
 	}
-	utils.CleanDB(t, db)
+	util.CleanDB(t, db)
 }
 
 func cleanTable(t *testing.T, db *imgr.DB) {
