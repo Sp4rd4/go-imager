@@ -80,32 +80,18 @@ func WithStaticFolder(path string) Option {
 	}
 }
 
-// WithRequestIDKey is functional option for setting LocalImageServer request_id context key,
-// default key is utils.RequestIDKey.
-func WithRequestIDKey(key utils.RequestKey) Option {
+// WithRequestKeys is functional option for setting LocalImageServer request_id  and user context key,
+// default keys are utils.RequestIDKey, utils.RequestUserKey.
+func WithRequestKeys(user, id utils.RequestKey) Option {
 	return func(is *LocalImageServer) error {
-		if key == "" {
+		if user == "" || id == "" {
 			return errors.New("key is empty")
 		}
-		if key == is.requestUserKey {
-			return errors.New("key is conflicting")
+		if id == user {
+			return errors.New("keys are conflicting")
 		}
-		is.requestIDKey = key
-		return nil
-	}
-}
-
-// WithRequestUserKey is functional option for setting LocalImageServer user context key,
-// default key if utils.RequestUserKey.
-func WithRequestUserKey(key utils.RequestKey) Option {
-	return func(is *LocalImageServer) error {
-		if key == "" {
-			return errors.New("key is empty")
-		}
-		if key == is.requestIDKey {
-			return errors.New("key is conflicting")
-		}
-		is.requestUserKey = key
+		is.requestIDKey = id
+		is.requestUserKey = user
 		return nil
 	}
 }
@@ -137,7 +123,7 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := extractImage(r)
+	id, err := extractImage(r, requestLogger)
 	if err != nil {
 		requestLogger.Info(err)
 		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`, requestLogger)
@@ -213,12 +199,16 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func extractImage(r *http.Request) (*imageData, error) {
+func extractImage(r *http.Request, log *log.Entry) (*imageData, error) {
 	file, info, err := r.FormFile("image")
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Error(err)
+		}
+	}()
 
 	bs, err := ioutil.ReadAll(file)
 	if err != nil {

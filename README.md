@@ -13,4 +13,4 @@ How to test
 =====
 `docker-compose -f docker-compose.test.yml run tests sh -c "./wait-for db:5432 -- go test ./... -count=1 -p 1 -v"`
 
-`-p 1` parameter is responsible for running different packages tests serially, so they won't conflict on db.
+`-p 1` parameter is responsible for running different packages tests serially, so they won't conflict on single db.

@@ -48,11 +48,8 @@ func (db *DB) AddImage(img *Image) error {
 		return err
 	}
 
-	if _, err = tx.Exec(`INSERT INTO images (filename, user_id) VALUES ($1, $2)`, img.Filename, img.UserID); err != nil {
-		if pgerr, ok := err.(*pq.Error); ok && pgerr.Code == "23505" {
-			err = ErrUniqueIndexConflict(pgerr.Table)
-		}
-	}
+	_, err = tx.Exec(`INSERT INTO images (filename, user_id) VALUES ($1, $2)`, img.Filename, img.UserID)
+	handleConflictError(&err)
 
 	if err != nil {
 		if errT := tx.Rollback(); errT != nil {
@@ -62,6 +59,14 @@ func (db *DB) AddImage(img *Image) error {
 		err = tx.Commit()
 	}
 	return err
+}
+
+func handleConflictError(err *error) {
+	if *err != nil {
+		if pgerr, ok := (*err).(*pq.Error); ok && pgerr.Code == "23505" {
+			*err = ErrUniqueIndexConflict(pgerr.Table)
+		}
+	}
 }
 
 // LoadImages selects Images from database.

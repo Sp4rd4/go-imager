@@ -26,12 +26,8 @@ func OpenDB(address, migrations string) (*sqlx.DB, error) {
 		return db, err
 	}
 
-	fileInfo, err := os.Stat(migrations)
-	if err != nil {
+	if err = checkFolder(migrations); err != nil {
 		return db, err
-	}
-	if !fileInfo.IsDir() {
-		return db, errors.New("unable to load migrationsfolder")
 	}
 
 	m, err := migrate.NewWithDatabaseInstance("file://"+migrations, "postgres", driver)
@@ -45,4 +41,15 @@ func OpenDB(address, migrations string) (*sqlx.DB, error) {
 	}
 
 	return db, nil
+}
+
+func checkFolder(migrations string) error {
+	fileInfo, err := os.Stat(migrations)
+	if err != nil {
+		return err
+	}
+	if !fileInfo.IsDir() {
+		return errors.New("unable to load migrations folder")
+	}
+	return nil
 }

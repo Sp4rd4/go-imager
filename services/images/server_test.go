@@ -33,13 +33,7 @@ func TestNewLocalImageServer(t *testing.T) {
 		options []images.Option
 		wantErr error
 	}{
-		{"OK", &images.DB{}, []images.Option{images.WithRequestUserKey("key")}, nil},
-		{
-			"Conflicting keys",
-			&images.DB{},
-			[]images.Option{images.WithRequestUserKey("1"), images.WithRequestIDKey("1")},
-			errors.New("key is conflicting"),
-		},
+		{"OK", &images.DB{}, []images.Option{images.WithRequestKeys("key1", "key2")}, nil},
 		{"Nil DB", nil, []images.Option{}, errors.New("missing storage")},
 	}
 	for _, ex := range examples {
@@ -78,44 +72,21 @@ func TestLocalImageServerWithStaticFolder(t *testing.T) {
 	}
 }
 
-func TestLocalImageServerWithRequestIDKey(t *testing.T) {
+func TestLocalImageServerWithRequestKeys(t *testing.T) {
 	examples := []struct {
 		name    string
-		key     utils.RequestKey
+		user    utils.RequestKey
+		id      utils.RequestKey
 		wantErr error
 	}{
-		{"Empty key", "", errors.New("key is empty")},
-		{"Conflicting key", utils.RequestUserKey, errors.New("key is conflicting")},
-		{"OK", "key", nil},
+		{"Empty key", "", "adsa", errors.New("key is empty")},
+		{"Conflicting key", "1", "1", errors.New("keys are conflicting")},
+		{"OK", "key1", "key2", nil},
 	}
 	for _, ex := range examples {
 		is := &images.LocalImageServer{}
-		if err := images.WithRequestUserKey(utils.RequestUserKey)(is); err != nil {
-			t.Fatal(err)
-		}
 		t.Run(ex.name, func(t *testing.T) {
-			assert.EqualValues(t, ex.wantErr, images.WithRequestIDKey(ex.key)(is), "Expected different error")
-		})
-	}
-}
-
-func TestLocalImageServerWithRequestUserKey(t *testing.T) {
-	examples := []struct {
-		name    string
-		key     utils.RequestKey
-		wantErr error
-	}{
-		{"Empty key", "", errors.New("key is empty")},
-		{"Conflicting key", utils.RequestIDKey, errors.New("key is conflicting")},
-		{"OK", "key", nil},
-	}
-	for _, ex := range examples {
-		is := &images.LocalImageServer{}
-		if err := images.WithRequestIDKey(utils.RequestIDKey)(is); err != nil {
-			t.Fatal(err)
-		}
-		t.Run(ex.name, func(t *testing.T) {
-			assert.EqualValues(t, ex.wantErr, images.WithRequestUserKey(ex.key)(is), "Expected different error")
+			assert.EqualValues(t, ex.wantErr, images.WithRequestKeys(ex.user, ex.id)(is), "Expected different error")
 		})
 	}
 }

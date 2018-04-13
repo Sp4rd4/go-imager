@@ -123,7 +123,8 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		utils.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
 		return
-	} else if err != sql.ErrNoRows {
+	}
+	if err != sql.ErrNoRows {
 		requestLogger.Error(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
@@ -140,7 +141,6 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 		Login:        r.FormValue("login"),
 		PasswordHash: hash,
 	}
-
 	if err = js.storage.CreateUser(user); err != nil {
 		if _, ok := err.(ErrUniqueIndexConflict); ok {
 			utils.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
@@ -151,7 +151,7 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = reponseJWTToken(user, js.tokenExpiration, js.issuer, js.secret, w); err != nil {
+	if err = js.reponseJWTToken(user, w); err != nil {
 		requestLogger.Error(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
@@ -175,13 +175,14 @@ func (js *JWTServer) IssueTokenExistingUser(w http.ResponseWriter, r *http.Reque
 	if err == sql.ErrNoRows || !CheckPasswordHash(r.FormValue("password"), user.PasswordHash) {
 		utils.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`, requestLogger)
 		return
-	} else if err != nil {
+	}
+	if err != nil {
 		requestLogger.Error(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
-	if err := reponseJWTToken(user, js.tokenExpiration, js.issuer, js.secret, w); err != nil {
+	if err := js.reponseJWTToken(user, w); err != nil {
 		requestLogger.Error(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
@@ -200,19 +201,18 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func reponseJWTToken(user *User, expiration time.Duration,
-	issuer string, secret []byte, output http.ResponseWriter) error {
-	expiresAt := time.Now().Add(expiration).Unix()
+func (js *JWTServer) reponseJWTToken(user *User, output http.ResponseWriter) error {
+	expiresAt := time.Now().Add(js.tokenExpiration).Unix()
 	token := jwt.New(jwt.SigningMethodHS256)
 	token.Claims = &utils.AuthTokenClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expiresAt,
-			Issuer:    issuer,
+			Issuer:    js.issuer,
 		},
 		Login: user.Login,
 		ID:    user.ID,
 	}
-	tokenString, err := token.SignedString(secret)
+	tokenString, err := token.SignedString(js.secret)
 	if err != nil {
 		return err
 	}

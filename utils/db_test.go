@@ -26,7 +26,7 @@ func TestOpenDB(t *testing.T) {
 
 	subTestInvalidURL(t)
 	subTestInvalidMigrationFolder(t, dbAddress)
-	subTestValidMigrations(t, dbAddress)
+	subTestsValidMigrations(t, dbAddress)
 	subTestInvalidMigrations(t, dbAddress)
 }
 
