@@ -149,10 +149,6 @@ func (ss stubStoreNil) LoadImages(_ *[]images.Image, _, _, _ uint64) (err error)
 	return
 }
 
-type nopReader struct{}
-
-func (nopReader) Read(p []byte) (n int, err error) { return 0, nil }
-
 func TestLocalImageServerPostImage(t *testing.T) {
 	logger, hook := test.NewNullLogger()
 	for _, ex := range examplesLocalImageServerPostImage {
@@ -205,7 +201,7 @@ func generateRequest(t *testing.T, fileType byte, contextVals map[utils.RequestK
 	var req *http.Request
 	var err error
 	if fileType == fileMissing {
-		req, err = http.NewRequest("POST", "", nopReader{})
+		req, err = http.NewRequest("POST", "", http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -298,7 +294,7 @@ func TestLocalImageServerListImages(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		req, err := http.NewRequest("GET", "", nopReader{})
+		req, err := http.NewRequest("GET", "", http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,6 +25,14 @@ func CloseAndCheckTest(t *testing.T, c io.Closer) {
 		return
 	}
 	if err := c.Close(); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
+}
+
+// CleanDB removes all data and tables from db
+func CleanDB(t *testing.T, db *sqlx.DB) {
+	if _, err := db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
+		t.Fatal("Unable to clean db")
+	}
+	CloseAndCheckTest(t, db)
 }

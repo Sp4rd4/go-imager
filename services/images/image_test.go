@@ -4,18 +4,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sp4rd4/go-imager/services/images"
 	"github.com/sp4rd4/go-imager/utils"
 )
-
-func cleanTable(t *testing.T, db *images.DB) {
-	if _, err := db.Exec(`TRUNCATE TABLE "images" CASCADE;`); err != nil {
-		t.Fatal(err)
-	}
-}
 
 func TestDBAddImage(t *testing.T) {
 	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
@@ -27,13 +20,15 @@ func TestDBAddImage(t *testing.T) {
 		t.Run(ex.name, func(t *testing.T) {
 			var err error
 			for _, img := range ex.input {
-				err = imgDB.AddImage(img)
+				if errA := imgDB.AddImage(img); errA != nil {
+					err = errA
+				}
 			}
 			assert.EqualValues(t, ex.wantErr, err, "Error should be as expected")
 			cleanTable(t, imgDB)
 		})
 	}
-	cleanDB(t, db)
+	utils.CleanDB(t, db)
 }
 
 func TestDBLoadImages(t *testing.T) {
@@ -63,12 +58,11 @@ func TestDBLoadImages(t *testing.T) {
 			cleanTable(t, imgDB)
 		})
 	}
-	cleanDB(t, db)
+	utils.CleanDB(t, db)
 }
 
-func cleanDB(t *testing.T, db *sqlx.DB) {
-	if _, err := db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
-		t.Fatal("Unable to clean db before tests")
+func cleanTable(t *testing.T, db *images.DB) {
+	if _, err := db.Exec(`TRUNCATE TABLE "images" CASCADE;`); err != nil {
+		t.Fatal(err)
 	}
-	utils.CloseAndCheckTest(t, db)
 }

@@ -93,8 +93,9 @@ func CheckJWT(secret []byte, issuer string, logger *log.Logger) func(http.Handle
 				jwtErrHandler(w, r, logger, err)
 				return
 			}
-
-			tkn, err := jwt.ParseWithClaims(tokenStr, &AuthTokenClaims{}, func(tkn *jwt.Token) (interface{}, error) {
+			claims := &AuthTokenClaims{}
+			// CHECK https://godoc.org/github.com/dgrijalva/jwt-go#ex-ParseWithClaims--CustomClaimsType
+			tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(tkn *jwt.Token) (interface{}, error) {
 				return secret, nil
 			})
 			if err != nil {
@@ -108,7 +109,7 @@ func CheckJWT(secret []byte, issuer string, logger *log.Logger) func(http.Handle
 					tkn.Header["alg"]))
 				return
 			}
-			if err = checkTokenWithClaims(tkn, issuer); err != nil {
+			if err = checkTokenClaims(claims, issuer); err != nil {
 				jwtErrHandler(w, r, logger, err)
 				return
 			}
@@ -150,13 +151,8 @@ func jwtErrHandler(w http.ResponseWriter, r *http.Request, logger *log.Logger, e
 	JSONResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`, requestLogger)
 }
 
-func checkTokenWithClaims(token *jwt.Token, issuer string) error {
-	if !token.Valid {
-		return errors.New("token is invalid")
-	}
-
-	claims, ok := token.Claims.(*AuthTokenClaims)
-	if !ok {
+func checkTokenClaims(claims *AuthTokenClaims, issuer string) error {
+	if claims == nil {
 		return errors.New("token claims is invalid")
 	}
 	if !claims.VerifyExpiresAt(time.Now().Unix(), true) {

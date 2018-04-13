@@ -19,7 +19,7 @@ var examplesDBAddImage = []struct {
 	{
 		"Duplicate image",
 		[]*images.Image{&images.Image{Filename: "filename", UserID: 1}, &images.Image{Filename: "filename", UserID: 1}},
-		nil,
+		images.ErrUniqueIndexConflict("images"),
 	},
 	{
 		"Missing image",

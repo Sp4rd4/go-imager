@@ -4,8 +4,10 @@ package images
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 // Storage interface defines storage methods needed by images service.
@@ -25,6 +27,14 @@ type Image struct {
 	UserID   uint64 `json:"-" db:"user_id"`
 }
 
+// ErrUniqueIndexConflict is custom error for unique index conflicts
+type ErrUniqueIndexConflict string
+
+// Error is errors interface implementation for ErrUniqueIndexConflict
+func (uic ErrUniqueIndexConflict) Error() string {
+	return "Conflict on unique index in table " + string(uic)
+}
+
 // AddImage insert Image into database.
 func (db *DB) AddImage(img *Image) error {
 	if img == nil {
@@ -37,12 +47,17 @@ func (db *DB) AddImage(img *Image) error {
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(
-		`INSERT INTO images (filename, user_id) VALUES ($1, $2)`,
-		img.Filename,
-		img.UserID)
+
+	if _, err = tx.Exec(`INSERT INTO images (filename, user_id) VALUES ($1, $2)`, img.Filename, img.UserID); err != nil {
+		if pgerr, ok := err.(*pq.Error); ok && pgerr.Code == "23505" {
+			err = ErrUniqueIndexConflict(pgerr.Table)
+		}
+	}
+
 	if err != nil {
-		err = tx.Rollback()
+		if errT := tx.Rollback(); errT != nil {
+			err = fmt.Errorf("First: %s, Second: %s", err, errT)
+		}
 	} else {
 		err = tx.Commit()
 	}

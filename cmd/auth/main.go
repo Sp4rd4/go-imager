@@ -54,7 +54,13 @@ func main() {
 	}
 	storage := &auth.DB{DB: conn}
 
-	imageServer, err := auth.NewJWTServer(storage, log, []byte(secret), durations["TOKEN_EXPIRE"], issuer)
+	imageServer, err := auth.NewJWTServer(
+		storage,
+		[]byte(secret),
+		auth.WithLogger(log),
+		auth.WithExpiration(durations["TOKEN_EXPIRE"]),
+		auth.WithIssuer(issuer),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -119,7 +119,7 @@ var examplesLocalImageServerPostImage = []struct {
 			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
 		},
 		want: want{
-			body:       `{"error":"Internal error occurred"}`,
+			body:       `{"error":"Internal server error"}`,
 			statusCode: http.StatusInternalServerError,
 			logMessage: "no such file or directory",
 		},
@@ -133,7 +133,7 @@ var examplesLocalImageServerPostImage = []struct {
 			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
 		},
 		want: want{
-			body:       `{"error":"Internal error occurred"}`,
+			body:       `{"error":"Internal server error"}`,
 			statusCode: http.StatusInternalServerError,
 			logMessage: "storage error",
 		},
@@ -189,7 +189,7 @@ var examplesLocalImageServerListImages = []struct {
 			context: map[utils.RequestKey]interface{}{utils.RequestUserKey: stubUser(1)},
 		},
 		want: want{
-			body:       `{"error":"Internal error occurred"}`,
+			body:       `{"error":"Internal server error"}`,
 			statusCode: http.StatusInternalServerError,
 			logMessage: "storage error",
 		},

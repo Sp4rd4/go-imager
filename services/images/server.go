@@ -27,7 +27,7 @@ type ImageServer interface {
 
 // LocalImageServer is ImageServer that stores images in local folder.
 type LocalImageServer struct {
-	store          Storage
+	storage        Storage
 	staticPath     string
 	log            *log.Logger
 	requestUserKey utils.RequestKey
@@ -48,18 +48,15 @@ type imageData struct {
 // Option describes option for LocalImageServer initializer
 type Option func(*LocalImageServer) error
 
-// Interface implementation check
-var _ ImageServer = &LocalImageServer{}
-
 // NewLocalImageServer is initializer with functional options for LocalImageServer.
-func NewLocalImageServer(store Storage, options ...Option) (ImageServer, error) {
-	if store == nil {
+func NewLocalImageServer(storage Storage, options ...Option) (ImageServer, error) {
+	if storage == nil {
 		return nil, errors.New("missing storage")
 	}
 	log.SetOutput(os.Stdout)
 	log := log.New()
 
-	is := &LocalImageServer{store, ".", log, utils.RequestUserKey, utils.RequestIDKey}
+	is := &LocalImageServer{storage, ".", log, utils.RequestUserKey, utils.RequestIDKey}
 	for _, option := range options {
 		if err := option(is); err != nil {
 			return nil, err
@@ -124,7 +121,7 @@ func WithLogger(logger *log.Logger) Option {
 	}
 }
 
-// PostImage saves image to statics folder of LocalImageServer and creates store record about that image.
+// PostImage saves image to statics folder of LocalImageServer and creates storage record about that image.
 // If context value defined by WithRequestUserKey doesn't contain variable
 // that implements User interface and returns ID()>0 image will not be processed.
 // * image (required) POST multipart-data file
@@ -140,7 +137,7 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := extractImage(r, "image")
+	id, err := extractImage(r)
 	if err != nil {
 		requestLogger.Info(err)
 		utils.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"No image is present"}`, requestLogger)
@@ -152,14 +149,14 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	ulid, err := ulid.New(ulid.Timestamp(now), entropy)
 	if err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
 	filename := ulid.String() + id.filename
 	if err = ioutil.WriteFile(filepath.Join(is.staticPath, filename), id.data, 0644); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 
@@ -167,9 +164,14 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 		Filename: filename,
 		UserID:   userID,
 	}
-	if err = is.store.AddImage(image); err != nil {
+	if err = is.storage.AddImage(image); err != nil {
+		if errU, ok := err.(ErrUniqueIndexConflict); ok {
+			requestLogger.Error(errU)
+			utils.JSONResponse(w, http.StatusConflict, `{"error":"Image filename is taken"}`, requestLogger)
+			return
+		}
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
@@ -195,10 +197,10 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.ParseUint(params.Get("limit"), 10, 64)
 	offset, _ := strconv.ParseUint(params.Get("offset"), 10, 64)
 	images := make([]Image, 0)
-	err = is.store.LoadImages(&images, limit, offset, userID)
+	err = is.storage.LoadImages(&images, limit, offset, userID)
 	if err != nil && err != sql.ErrNoRows {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -206,13 +208,13 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.NewEncoder(w).Encode(images); err != nil {
 		requestLogger.Error(err)
-		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
+		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
 	}
 }
 
-func extractImage(r *http.Request, field string) (*imageData, error) {
-	file, info, err := r.FormFile(field)
+func extractImage(r *http.Request) (*imageData, error) {
+	file, info, err := r.FormFile("image")
 	if err != nil {
 		return nil, err
 	}

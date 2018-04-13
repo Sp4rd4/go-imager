@@ -54,7 +54,11 @@ func main() {
 	}
 	storage := &images.DB{DB: conn}
 
-	imageServer, err := images.NewLocalImageServer(storage, images.WithStaticFolder(staticStoragePath), images.WithLogger(logger))
+	imageServer, err := images.NewLocalImageServer(
+		storage,
+		images.WithStaticFolder(staticStoragePath),
+		images.WithLogger(logger),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,0 +1,11 @@
+{
+	"Enable": [
+		"lll", "unparam", "megacheck","nakedret", "dupl","maligned", "deadcode", "dupl", "errcheck", "gas",
+		"goconst", "gocyclo", "gofmt", "goimports", "golint", "gotype", "gotypex", "ineffassign", "interfacer",
+		"megacheck", "structcheck","unconvert", "varcheck", "vet", "vetshadow"
+	],
+	"Cyclo": 7,
+	"LineLength": 120,
+	"Vendor": true
+}
+

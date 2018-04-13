@@ -22,10 +22,7 @@ func TestOpenDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
-		t.Fatal("Unable to clean db before tests")
-	}
-	utils.CloseAndCheckTest(t, db)
+	utils.CleanDB(t, db)
 
 	subTestInvalidURL(t)
 	subTestInvalidMigrationFolder(t, dbAddress)
@@ -74,10 +71,7 @@ func subTestValidMigrations(t *testing.T, dbAddress string) {
 		db, err := utils.OpenDB(dbAddress, migrationsFolder)
 		if assert.Nil(t, err, "OpenDB shouldn't return error with existing valid migrations") {
 			if assert.NotNil(t, db, "OpenDB should return valid *sqlx.DB with existing invalid migrations") {
-				if _, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
-					t.Fatal("Unable to clean db after tests")
-				}
-				utils.CloseAndCheckTest(t, db)
+				utils.CleanDB(t, db)
 			}
 		}
 	})
@@ -98,10 +92,7 @@ func subTestInvalidMigrations(t *testing.T, dbAddress string) {
 		db, err := utils.OpenDB(dbAddress, migrationsFolder)
 		if assert.NotNil(t, err, "OpenDB should return error with existing invalid migrations") {
 			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB with existing invalid migrations") {
-				if _, err = db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
-					t.Fatal("Unable to clean db after tests")
-				}
-				utils.CloseAndCheckTest(t, db)
+				utils.CleanDB(t, db)
 			}
 		}
 	})
