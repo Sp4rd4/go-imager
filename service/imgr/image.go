@@ -1,6 +1,6 @@
-// Package images creates service that is able to upload image
+// Package imgr creates service that is able to upload image
 // and return list of images uploaded by user.
-package images
+package imgr
 
 import (
 	"errors"

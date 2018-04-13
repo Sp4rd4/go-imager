@@ -1,4 +1,4 @@
-package images_test
+package imgr_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/sp4rd4/go-imager/service/images"
+	"github.com/sp4rd4/go-imager/service/imgr"
 	"github.com/sp4rd4/go-imager/util"
 )
 
@@ -15,7 +15,7 @@ func TestDBAddImage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	imgDB := &images.DB{DB: db}
+	imgDB := &imgr.DB{DB: db}
 	for _, ex := range examplesDBAddImage {
 		t.Run(ex.name, func(t *testing.T) {
 			var err error
@@ -36,7 +36,7 @@ func TestDBLoadImages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	imgDB := &images.DB{DB: db}
+	imgDB := &imgr.DB{DB: db}
 	for _, ex := range examplesDBLoadImages {
 		t.Run(ex.name, func(t *testing.T) {
 			for _, img := range ex.initial {
@@ -45,7 +45,7 @@ func TestDBLoadImages(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			imgs := make([]images.Image, 0)
+			imgs := make([]imgr.Image, 0)
 			err := imgDB.LoadImages(&imgs, ex.limit, ex.offset, ex.userID)
 			assert.EqualValues(t, ex.wantErr, err, "Error should be as expected")
 			for i, img := range ex.want {
@@ -61,7 +61,7 @@ func TestDBLoadImages(t *testing.T) {
 	utils.CleanDB(t, db)
 }
 
-func cleanTable(t *testing.T, db *images.DB) {
+func cleanTable(t *testing.T, db *imgr.DB) {
 	if _, err := db.Exec(`TRUNCATE TABLE "images" CASCADE;`); err != nil {
 		t.Fatal(err)
 	}

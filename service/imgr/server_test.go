@@ -1,4 +1,4 @@
-package images_test
+package imgr_test
 
 import (
 	"bytes"
@@ -22,23 +22,23 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sp4rd4/go-imager/service/images"
+	"github.com/sp4rd4/go-imager/service/imgr"
 	"github.com/sp4rd4/go-imager/util"
 )
 
 func TestNewLocalImageServer(t *testing.T) {
 	examples := []struct {
 		name    string
-		db      images.Storage
-		options []images.Option
+		db      imgr.Storage
+		options []imgr.Option
 		wantErr error
 	}{
-		{"OK", &images.DB{}, []images.Option{images.WithRequestKeys("key1", "key2")}, nil},
-		{"Nil DB", nil, []images.Option{}, errors.New("missing storage")},
+		{"OK", &imgr.DB{}, []imgr.Option{imgr.WithRequestKeys("key1", "key2")}, nil},
+		{"Nil DB", nil, []imgr.Option{}, errors.New("missing storage")},
 	}
 	for _, ex := range examples {
 		t.Run(ex.name, func(t *testing.T) {
-			_, err := images.NewLocalImageServer(ex.db, ex.options...)
+			_, err := imgr.NewLocalImageServer(ex.db, ex.options...)
 			assert.EqualValues(t, ex.wantErr, err)
 		})
 	}
@@ -60,12 +60,12 @@ func TestLocalImageServerWithStaticFolder(t *testing.T) {
 		{"OK", folder, nil},
 	}
 	for _, ex := range examples {
-		is := &images.LocalImageServer{}
+		is := &imgr.LocalImageServer{}
 		t.Run(ex.name, func(t *testing.T) {
 			if ex.wantErr != nil {
-				assert.Equal(t, ex.wantErr.Error(), images.WithStaticFolder(ex.path)(is).Error(), "Expected different error")
+				assert.Equal(t, ex.wantErr.Error(), imgr.WithStaticFolder(ex.path)(is).Error(), "Expected different error")
 			} else {
-				assert.Nil(t, images.WithStaticFolder(ex.path)(is), "Expected different error")
+				assert.Nil(t, imgr.WithStaticFolder(ex.path)(is), "Expected different error")
 			}
 
 		})
@@ -84,9 +84,9 @@ func TestLocalImageServerWithRequestKeys(t *testing.T) {
 		{"OK", "key1", "key2", nil},
 	}
 	for _, ex := range examples {
-		is := &images.LocalImageServer{}
+		is := &imgr.LocalImageServer{}
 		t.Run(ex.name, func(t *testing.T) {
-			assert.EqualValues(t, ex.wantErr, images.WithRequestKeys(ex.user, ex.id)(is), "Expected different error")
+			assert.EqualValues(t, ex.wantErr, imgr.WithRequestKeys(ex.user, ex.id)(is), "Expected different error")
 		})
 	}
 }
@@ -101,22 +101,22 @@ func TestLocalImageServerWithLogger(t *testing.T) {
 		{"OK", log.New(), nil},
 	}
 	for _, ex := range examples {
-		is := &images.LocalImageServer{}
+		is := &imgr.LocalImageServer{}
 		t.Run(ex.name, func(t *testing.T) {
-			assert.EqualValues(t, ex.wantErr, images.WithLogger(ex.logger)(is), "Expected different error")
+			assert.EqualValues(t, ex.wantErr, imgr.WithLogger(ex.logger)(is), "Expected different error")
 		})
 	}
 }
 
 type stubStoreNil bool
 
-func (ss stubStoreNil) AddImage(_ *images.Image) (err error) {
+func (ss stubStoreNil) AddImage(_ *imgr.Image) (err error) {
 	if !ss {
 		err = errors.New("storage error")
 	}
 	return
 }
-func (ss stubStoreNil) LoadImages(_ *[]images.Image, _, _, _ uint64) (err error) {
+func (ss stubStoreNil) LoadImages(_ *[]imgr.Image, _, _, _ uint64) (err error) {
 	return
 }
 
@@ -127,10 +127,10 @@ func TestLocalImageServerPostImage(t *testing.T) {
 		if err != nil {
 			t.Fatal("Unable to create temp dir")
 		}
-		is, err := images.NewLocalImageServer(
+		is, err := imgr.NewLocalImageServer(
 			stubStoreNil(ex.storage),
-			images.WithLogger(logger),
-			images.WithStaticFolder(staticPath),
+			imgr.WithLogger(logger),
+			imgr.WithStaticFolder(staticPath),
 		)
 		if err != nil {
 			t.Fatal(err)
@@ -238,17 +238,17 @@ func createFile(t *testing.T, kind byte) string {
 
 type stubStoreSlice bool
 
-func (ss stubStoreSlice) AddImage(_ *images.Image) (err error) {
+func (ss stubStoreSlice) AddImage(_ *imgr.Image) (err error) {
 	return
 }
-func (ss stubStoreSlice) LoadImages(in *[]images.Image, _, _, _ uint64) (err error) {
+func (ss stubStoreSlice) LoadImages(in *[]imgr.Image, _, _, _ uint64) (err error) {
 	if !ss {
 		err = errors.New("storage error")
 	} else {
-		*in = []images.Image{
-			images.Image{Filename: "filename1", UserID: 1},
-			images.Image{Filename: "filename2", UserID: 1},
-			images.Image{Filename: "filename3", UserID: 1},
+		*in = []imgr.Image{
+			imgr.Image{Filename: "filename1", UserID: 1},
+			imgr.Image{Filename: "filename2", UserID: 1},
+			imgr.Image{Filename: "filename3", UserID: 1},
 		}
 	}
 	return
@@ -257,9 +257,9 @@ func (ss stubStoreSlice) LoadImages(in *[]images.Image, _, _, _ uint64) (err err
 func TestLocalImageServerListImages(t *testing.T) {
 	logger, hook := test.NewNullLogger()
 	for _, ex := range examplesLocalImageServerListImages {
-		is, err := images.NewLocalImageServer(
+		is, err := imgr.NewLocalImageServer(
 			stubStoreSlice(ex.storage),
-			images.WithLogger(logger),
+			imgr.WithLogger(logger),
 		)
 		if err != nil {
 			t.Fatal(err)
@@ -300,7 +300,7 @@ func TestLocalImageServerListImages(t *testing.T) {
 			if len(ex.want.body) > 0 {
 				assert.Regexp(t, ex.want.body, string(b), "Incorrect response body")
 			} else {
-				err = json.Unmarshal(b, &[]images.Image{})
+				err = json.Unmarshal(b, &[]imgr.Image{})
 				assert.Nil(t, err, "Response body should be valid json")
 			}
 

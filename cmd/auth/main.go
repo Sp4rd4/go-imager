@@ -54,7 +54,7 @@ func main() {
 	}
 	storage := &auth.DB{DB: conn}
 
-	imageServer, err := auth.NewJWTServer(
+	tokenServer, err := auth.NewJWTServer(
 		storage,
 		[]byte(secret),
 		auth.WithLogger(log),
@@ -66,8 +66,8 @@ func main() {
 	}
 
 	mux := goji.NewMux()
-	mux.HandleFunc(pat.Post("/users/sign_in"), imageServer.IssueTokenExistingUser)
-	mux.HandleFunc(pat.Post("/users/sign_up"), imageServer.IssueTokenNewUser)
+	mux.HandleFunc(pat.Post("/users/sign_in"), tokenServer.IssueTokenExistingUser)
+	mux.HandleFunc(pat.Post("/users/sign_up"), tokenServer.IssueTokenNewUser)
 	mux.Use(utils.RequestID(log))
 	mux.Use(utils.Logger(log))
 

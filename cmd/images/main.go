@@ -7,7 +7,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sp4rd4/go-imager/service/images"
+	"github.com/sp4rd4/go-imager/service/imgr"
 	"github.com/sp4rd4/go-imager/util"
 	goji "goji.io"
 	"goji.io/pat"
@@ -52,12 +52,12 @@ func main() {
 		utils.CloseAndCheck(conn, logger)
 		log.Fatal(err)
 	}
-	storage := &images.DB{DB: conn}
+	storage := &imgr.DB{DB: conn}
 
-	imageServer, err := images.NewLocalImageServer(
+	imageServer, err := imgr.NewLocalImageServer(
 		storage,
-		images.WithStaticFolder(staticStoragePath),
-		images.WithLogger(logger),
+		imgr.WithStaticFolder(staticStoragePath),
+		imgr.WithLogger(logger),
 	)
 	if err != nil {
 		log.Fatal(err)

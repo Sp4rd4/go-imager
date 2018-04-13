@@ -1,4 +1,4 @@
-package images_test
+package imgr_test
 
 import (
 	"net/http"
