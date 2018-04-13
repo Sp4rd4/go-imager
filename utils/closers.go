@@ -1,4 +1,4 @@
-// Package utils contains various shared functionality between services
+// Package utils contains various shared functionality between services.
 package utils
 
 import (
@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// CloseAndCheck closes variable and notifies if error happens
+// CloseAndCheck closes variable and notifies if error happens.
 func CloseAndCheck(c io.Closer, log *log.Logger) {
 	if c == nil {
 		return
@@ -18,7 +18,7 @@ func CloseAndCheck(c io.Closer, log *log.Logger) {
 	}
 }
 
-// CloseAndCheckTest closes variable and fails tests if error happens
+// CloseAndCheckTest closes variable and fails tests if error happens.
 func CloseAndCheckTest(t *testing.T, c io.Closer) {
 	if c == nil {
 		return

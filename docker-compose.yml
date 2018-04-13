@@ -12,6 +12,7 @@ services:
     depends_on:
       - postgres_images
     volumes:
+      - ./wait-for:./wait-for
       - static:/static
     env_file:
       - .env.common
@@ -27,6 +28,8 @@ services:
       - 3000
     depends_on:
       - postgres_auth
+    volumes:
+      - ./wait-for:./wait-for
     env_file:
       - .env.common
       - .env.auth

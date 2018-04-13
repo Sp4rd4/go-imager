@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	logger := log.New()
 	log.SetOutput(os.Stdout)
+	logger := log.New()
 
 	dbAddress := os.Getenv("DATABASE_URL")
 	serverHost := os.Getenv("HOST")
@@ -54,7 +54,7 @@ func main() {
 	}
 	storage := &images.DB{DB: conn}
 
-	imageServer, err := images.NewLocalImageServer(storage, staticStoragePath, logger)
+	imageServer, err := images.NewLocalImageServer(storage, images.WithStaticFolder(staticStoragePath), images.WithLogger(logger))
 	if err != nil {
 		log.Fatal(err)
 	}

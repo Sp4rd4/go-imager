@@ -34,12 +34,13 @@ func TestOpenDB(t *testing.T) {
 }
 
 func subTestInvalidURL(t *testing.T) {
+	migrationsFolder, err := ioutil.TempDir("", "migrations")
+	if err != nil {
+		t.Fatal("Unable to create temp dir")
+	}
+	defer os.RemoveAll(migrationsFolder)
+
 	t.Run("Invalid DB URL", func(t *testing.T) {
-		migrationsFolder, err := ioutil.TempDir("", "migrations")
-		if err != nil {
-			t.Fatal("Unable to create temp dir")
-		}
-		defer os.RemoveAll(migrationsFolder)
 		db, err := utils.OpenDB("wrong", migrationsFolder)
 		if assert.NotNil(t, err, "OpenDB should return error for incorrect db link") {
 			assert.Nil(t, db, "OpenDB should return nil *sqlx.DB for incorrect db link")
@@ -59,17 +60,17 @@ func subTestInvalidMigrationFolder(t *testing.T, dbAddress string) {
 }
 
 func subTestValidMigrations(t *testing.T, dbAddress string) {
+	migrationsFolder, err := ioutil.TempDir("", "migrations")
+	if err != nil {
+		t.Fatal("Unable to create temp dir")
+	}
+	defer os.RemoveAll(migrationsFolder)
+
+	tmsp := time.Now().Unix()
+	createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
+	createMigration(t, migrationsFolder, "second", `CREATE TABLE "users" ("name" varchar);`, tmsp+1)
+
 	t.Run("ValidMigrations", func(t *testing.T) {
-		migrationsFolder, err := ioutil.TempDir("", "migrations")
-		if err != nil {
-			t.Fatal("Unable to create temp dir")
-		}
-		defer os.RemoveAll(migrationsFolder)
-
-		tmsp := time.Now().Unix()
-		createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
-		createMigration(t, migrationsFolder, "second", `CREATE TABLE "users" ("name" varchar);`, tmsp+1)
-
 		db, err := utils.OpenDB(dbAddress, migrationsFolder)
 		if assert.Nil(t, err, "OpenDB shouldn't return error with existing valid migrations") {
 			if assert.NotNil(t, db, "OpenDB should return valid *sqlx.DB with existing invalid migrations") {
@@ -83,17 +84,17 @@ func subTestValidMigrations(t *testing.T, dbAddress string) {
 }
 
 func subTestInvalidMigrations(t *testing.T, dbAddress string) {
+	migrationsFolder, err := ioutil.TempDir("", "migrations")
+	if err != nil {
+		t.Fatal("Unable to create temp dir")
+	}
+	defer os.RemoveAll(migrationsFolder)
+
+	tmsp := time.Now().Unix()
+	createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
+	createMigration(t, migrationsFolder, "second", `CREATE ms" ("prod");`, tmsp+1)
+
 	t.Run("Invalid existing migrations", func(t *testing.T) {
-		migrationsFolder, err := ioutil.TempDir("", "migrations")
-		if err != nil {
-			t.Fatal("Unable to create temp dir")
-		}
-		defer os.RemoveAll(migrationsFolder)
-
-		tmsp := time.Now().Unix()
-		createMigration(t, migrationsFolder, "first", `CREATE TABLE "films" ("prod" varchar);`, tmsp)
-		createMigration(t, migrationsFolder, "second", `CREATE ms" ("prod");`, tmsp+1)
-
 		db, err := utils.OpenDB(dbAddress, migrationsFolder)
 		if assert.NotNil(t, err, "OpenDB should return error with existing invalid migrations") {
 			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB with existing invalid migrations") {

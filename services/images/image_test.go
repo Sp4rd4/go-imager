@@ -17,32 +17,32 @@ func cleanTable(t *testing.T, db *images.DB) {
 	}
 }
 
-func TestAddImage(t *testing.T) {
+func TestDBAddImage(t *testing.T) {
 	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	imgDB := &images.DB{DB: db}
-	for _, ex := range examplesAddImage {
+	for _, ex := range examplesDBAddImage {
 		t.Run(ex.name, func(t *testing.T) {
 			var err error
 			for _, img := range ex.input {
 				err = imgDB.AddImage(img)
 			}
-			assert.EqualValues(t, ex.err, err, "Error should be as expected")
+			assert.EqualValues(t, ex.wantErr, err, "Error should be as expected")
 			cleanTable(t, imgDB)
 		})
 	}
 	cleanDB(t, db)
 }
 
-func TestLoadImages(t *testing.T) {
+func TestDBLoadImages(t *testing.T) {
 	db, err := utils.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	imgDB := &images.DB{DB: db}
-	for _, ex := range examplesLoadImages {
+	for _, ex := range examplesDBLoadImages {
 		t.Run(ex.name, func(t *testing.T) {
 			for _, img := range ex.initial {
 				err = imgDB.AddImage(&img)
@@ -52,8 +52,8 @@ func TestLoadImages(t *testing.T) {
 			}
 			imgs := make([]images.Image, 0)
 			err := imgDB.LoadImages(&imgs, ex.limit, ex.offset, ex.userID)
-			assert.EqualValues(t, ex.err, err, "Error should be as expected")
-			for i, img := range ex.result {
+			assert.EqualValues(t, ex.wantErr, err, "Error should be as expected")
+			for i, img := range ex.want {
 				if i < len(imgs) {
 					assert.Equalf(t, img, imgs[i], "Loaded Image %d is not as expected", i)
 				} else {
@@ -65,6 +65,7 @@ func TestLoadImages(t *testing.T) {
 	}
 	cleanDB(t, db)
 }
+
 func cleanDB(t *testing.T, db *sqlx.DB) {
 	if _, err := db.Exec("DROP SCHEMA public CASCADE;CREATE SCHEMA public;"); err != nil {
 		t.Fatal("Unable to clean db before tests")

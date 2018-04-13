@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// JSONResponse generates json response with given body and status code, while setting proper content type
+// JSONResponse generates json response with given body and status code, while setting proper content type.
 func JSONResponse(w http.ResponseWriter, status int, message string, logger *log.Entry) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(status)

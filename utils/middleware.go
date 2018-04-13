@@ -14,28 +14,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RequestKey is a custom type for a context keys
+// RequestKey is a custom type for a context keys.
 type RequestKey string
 
-// RequestIDKey is a context Key for request_id
+// RequestIDKey is a context Key for request_id.
 const RequestIDKey RequestKey = "requestID"
 
-// RequestUserKey is a context Key for user data
+// RequestUserKey is a context Key for user data.
 const RequestUserKey RequestKey = "user"
 
-// AuthTokenClaims are JWT claims for user
+// AuthTokenClaims are JWT claims for user.
 type AuthTokenClaims struct {
 	Login string
 	ID    uint64
 	jwt.StandardClaims
 }
 
-// This type allows to implement methods for image.User interface
+// Token allows to implement methods for image.User interface over jwt.Token.
 type Token struct {
 	*jwt.Token
 }
 
-// RequestID middleware adds unique request_id into request context
+// RequestID middleware adds unique request_id into request context.
 func RequestID(logger *log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +54,7 @@ func RequestID(logger *log.Logger) func(http.Handler) http.Handler {
 	}
 }
 
-// Logger middleware logs incoming requests and their timing
+// Logger middleware logs incoming requests and their timing.
 func Logger(logger *log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func Logger(logger *log.Logger) func(http.Handler) http.Handler {
 }
 
 // CheckJWT middleware checks authorization header for JWT token, validates its signature and content,
-// then places images.User interface type into context for future use
+// then places images.User interface type into context for future use.
 func CheckJWT(secret []byte, issuer string, logger *log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,12 +118,7 @@ func CheckJWT(secret []byte, issuer string, logger *log.Logger) func(http.Handle
 	}
 }
 
-// Key return context key for the token
-func (tkn *Token) Key() RequestKey {
-	return RequestUserKey
-}
-
-// ID returns user id from context value
+// ID returns user id from context value.
 func (tkn *Token) ID() uint64 {
 	claims, ok := tkn.Claims.(*AuthTokenClaims)
 	if tkn.Valid && ok {

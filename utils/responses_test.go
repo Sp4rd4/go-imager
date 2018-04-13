@@ -23,10 +23,9 @@ func (b badResponseWriter) Write([]byte) (int, error) {
 
 func TestJSONResponse(t *testing.T) {
 	logger, hook := test.NewNullLogger()
-
+	w := httptest.NewRecorder()
+	entry := log.NewEntry(logger)
 	t.Run("Able to write response", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		entry := log.NewEntry(logger)
 		utils.JSONResponse(w, http.StatusOK, "message", entry)
 		assert.Equal(t, "application/json", w.Header().Get("Content-Type"), "Mismatching response content type")
 		assert.Equal(t, http.StatusOK, w.Result().StatusCode, "Mismatching response status code")
@@ -39,10 +38,10 @@ func TestJSONResponse(t *testing.T) {
 		hook.Reset()
 	})
 
+	w = httptest.NewRecorder()
+	bw := badResponseWriter{w}
+	entry = log.NewEntry(logger)
 	t.Run("Not able to write response", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		bw := badResponseWriter{w}
-		entry := log.NewEntry(logger)
 		utils.JSONResponse(bw, http.StatusOK, "message", entry)
 		assert.Equal(t, "application/json", bw.Header().Get("Content-Type"), "Mismatching response content type")
 		assert.Equal(t, http.StatusOK, w.Result().StatusCode, "Mismatching response status code")
@@ -52,7 +51,6 @@ func TestJSONResponse(t *testing.T) {
 		}
 		assert.Equal(t, "", string(b), "Mismatching response body content")
 		if assert.Equal(t, 1, len(hook.Entries)) {
-			assert.Equal(t, log.ErrorLevel, hook.Entries[0].Level, "Wrong log entry level")
 			assert.Equal(t, "Network failed", hook.Entries[0].Message, "Wrong log entry message")
 		}
 		hook.Reset()

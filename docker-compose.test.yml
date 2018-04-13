@@ -7,6 +7,8 @@ services:
       target: build
     depends_on:
       - postgres
+    volumes:
+    - ./wait-for:./wait-for
     env_file:
       - .env.test
 

@@ -6,15 +6,15 @@ import (
 
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
-	// DB connection establishing is handled only in this file
+	// DB connection establishing is handled only in this file.
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/jmoiron/sqlx"
-	// DB connection establishing is handled only in this file
+	// DB connection establishing is handled only in this file.
 	_ "github.com/lib/pq"
 )
 
 // OpenDB opens connection to postgres DB
-// and run migrations from given folder path if there are any not ran before
+// and run migrations from given folder path if there are any not ran before.
 func OpenDB(address, migrations string) (*sqlx.DB, error) {
 	db, err := sqlx.Connect("postgres", address)
 	if err != nil {

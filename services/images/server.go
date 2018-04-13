@@ -19,40 +19,115 @@ import (
 	"github.com/sp4rd4/go-imager/utils"
 )
 
+// ImageServer defines interface for service that can list and process uploaded images.
 type ImageServer interface {
 	ListImages(w http.ResponseWriter, r *http.Request)
 	PostImage(w http.ResponseWriter, r *http.Request)
 }
 
+// LocalImageServer is ImageServer that stores images in local folder.
 type LocalImageServer struct {
-	db                Storage
-	staticsFolderPath string
-	log               *log.Logger
+	store          Storage
+	staticPath     string
+	log            *log.Logger
+	requestUserKey utils.RequestKey
+	requestIDKey   utils.RequestKey
 }
 
-// User interface
+// User interface for getting needed user info from context value.
 type User interface {
 	ID() uint64
-	Key() string
 }
 
+// imageData defines uploaded image data.
 type imageData struct {
 	filename string
 	data     []byte
 }
 
-func NewLocalImageServer(db Storage, staticsFolderPath string, log *log.Logger) (ImageServer, error) {
-	fileInfo, err := os.Stat(staticsFolderPath)
-	if err != nil {
-		return nil, err
+// Option describes option for LocalImageServer initializer
+type Option func(*LocalImageServer) error
+
+// Interface implementation check
+var _ ImageServer = &LocalImageServer{}
+
+// NewLocalImageServer is initializer with functional options for LocalImageServer.
+func NewLocalImageServer(store Storage, options ...Option) (ImageServer, error) {
+	if store == nil {
+		return nil, errors.New("missing storage")
 	}
-	if !fileInfo.IsDir() {
-		return nil, errors.New("staticsFolderPath is not pointing to folder")
+	log.SetOutput(os.Stdout)
+	log := log.New()
+
+	is := &LocalImageServer{store, ".", log, utils.RequestUserKey, utils.RequestIDKey}
+	for _, option := range options {
+		if err := option(is); err != nil {
+			return nil, err
+		}
 	}
-	is := &LocalImageServer{db, staticsFolderPath, log}
 	return is, nil
 }
 
+// WithStaticFolder is functional option for setting LocalImageServer static folder path.
+func WithStaticFolder(path string) Option {
+	return func(is *LocalImageServer) error {
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if !fileInfo.IsDir() {
+			return errors.New("path is not pointing to folder")
+		}
+		is.staticPath = path
+		return nil
+	}
+}
+
+// WithRequestIDKey is functional option for setting LocalImageServer request_id context key,
+// default key is utils.RequestIDKey.
+func WithRequestIDKey(key utils.RequestKey) Option {
+	return func(is *LocalImageServer) error {
+		if key == "" {
+			return errors.New("key is empty")
+		}
+		if key == is.requestUserKey {
+			return errors.New("key is conflicting")
+		}
+		is.requestIDKey = key
+		return nil
+	}
+}
+
+// WithRequestUserKey is functional option for setting LocalImageServer user context key,
+// default key if utils.RequestUserKey.
+func WithRequestUserKey(key utils.RequestKey) Option {
+	return func(is *LocalImageServer) error {
+		if key == "" {
+			return errors.New("key is empty")
+		}
+		if key == is.requestIDKey {
+			return errors.New("key is conflicting")
+		}
+		is.requestUserKey = key
+		return nil
+	}
+}
+
+// WithLogger is functional option for setting LocalImageServer logger
+func WithLogger(logger *log.Logger) Option {
+	return func(is *LocalImageServer) error {
+		if logger == nil {
+			return errors.New("logger is missing")
+		}
+		is.log = logger
+		return nil
+	}
+}
+
+// PostImage saves image to statics folder of LocalImageServer and creates store record about that image.
+// If context value defined by WithRequestUserKey doesn't contain variable
+// that implements User interface and returns ID()>0 image will not be processed.
+// * image (required) POST multipart-data file
 func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestID, _ := ctx.Value(utils.RequestIDKey).(string)
@@ -82,7 +157,7 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filename := ulid.String() + id.filename
-	if err = ioutil.WriteFile(filepath.Join(is.staticsFolderPath, filename), id.data, 0644); err != nil {
+	if err = ioutil.WriteFile(filepath.Join(is.staticPath, filename), id.data, 0644); err != nil {
 		requestLogger.Error(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
 		return
@@ -92,7 +167,7 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 		Filename: filename,
 		UserID:   userID,
 	}
-	if err = is.db.AddImage(image); err != nil {
+	if err = is.store.AddImage(image); err != nil {
 		requestLogger.Error(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
 		return
@@ -100,6 +175,11 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// ListImages returns json formatted images list assigned to the current user.
+// If context value defined by WithRequestUserKey doesn't contain variable
+// that implements User interface and returns ID()>0 no images will be loaded.
+// * limit (default: none) Query parameter that states size of returned selection
+// * offset (default: 0) Query parameter that states selection offset of returned selection
 func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	requestID, _ := ctx.Value(utils.RequestIDKey).(string)
@@ -112,17 +192,10 @@ func (is *LocalImageServer) ListImages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := r.URL.Query()
-	var limit, offset uint64
-	limitPars, ok := params["limit"]
-	if ok && len(limitPars) > 0 {
-		limit, _ = strconv.ParseUint(params["limit"][0], 10, 64)
-	}
-	offsetPar, ok := params["offset"]
-	if ok && len(offsetPar) > 0 {
-		offset, _ = strconv.ParseUint(params["offset"][0], 10, 64)
-	}
+	limit, _ := strconv.ParseUint(params.Get("limit"), 10, 64)
+	offset, _ := strconv.ParseUint(params.Get("offset"), 10, 64)
 	images := make([]Image, 0)
-	err = is.db.LoadImages(&images, limit, offset, userID)
+	err = is.store.LoadImages(&images, limit, offset, userID)
 	if err != nil && err != sql.ErrNoRows {
 		requestLogger.Error(err)
 		utils.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal error occurred"}`, requestLogger)
@@ -143,27 +216,24 @@ func extractImage(r *http.Request, field string) (*imageData, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	contentType := info.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, "image/") {
-		return nil, errors.New("content type is incorrect")
-	}
+	defer file.Close()
 
 	bs, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
 
-	i := &imageData{info.Filename, bs}
-	return i, nil
+	// http.DetectContentType specifies 512 as relevant data for type checking
+	if !strings.HasPrefix(http.DetectContentType(bs[:512]), "image/") {
+		return nil, errors.New("content type is incorrect")
+	}
+
+	return &imageData{info.Filename, bs}, nil
 }
 
 func extracrtUserID(ctx context.Context) (uint64, error) {
-	var user User
-	user, ok := ctx.Value(utils.RequestUserKey).(User)
-	id := user.ID()
-	if ok && id > 0 {
-		return id, nil
+	if user, ok := ctx.Value(utils.RequestUserKey).(User); ok {
+		return user.ID(), nil
 	}
 	return 0, errors.New("no valid user_id provided")
 }

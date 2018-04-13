@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	logger := log.New()
 	log.SetOutput(os.Stdout)
+	log := log.New()
 
 	dbAddress := os.Getenv("DATABASE_URL")
 	serverHost := os.Getenv("HOST")
@@ -27,7 +27,7 @@ func main() {
 		var err error
 		migrationsFolder, err = filepath.Abs("./db/migrations/")
 		if err != nil {
-			logger.Fatal(err)
+			log.Fatal(err)
 		}
 	}
 
@@ -43,27 +43,27 @@ func main() {
 		duration, err := time.ParseDuration(timeoutVal)
 		durations[timeout] = duration
 		if err != nil {
-			logger.Fatal(err)
+			log.Fatal(err)
 		}
 	}
 
 	conn, err := utils.OpenDB(dbAddress, migrationsFolder)
 	if err != nil {
-		logger.Fatal(err)
-		utils.CloseAndCheck(conn, logger)
+		log.Fatal(err)
+		utils.CloseAndCheck(conn, log)
 	}
 	storage := &auth.DB{DB: conn}
 
-	imageServer, err := auth.NewJWTServer(storage, logger, []byte(secret), durations["TOKEN_EXPIRE"], issuer)
+	imageServer, err := auth.NewJWTServer(storage, log, []byte(secret), durations["TOKEN_EXPIRE"], issuer)
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Post("/users/sign_in"), imageServer.IssueTokenExistingUser)
 	mux.HandleFunc(pat.Post("/users/sign_up"), imageServer.IssueTokenNewUser)
-	mux.Use(utils.RequestID(logger))
-	mux.Use(utils.Logger(logger))
+	mux.Use(utils.RequestID(log))
+	mux.Use(utils.Logger(log))
 
 	srv := &http.Server{
 		ReadTimeout:  durations["HTTP_READ_TIMEOUT"],
@@ -72,5 +72,5 @@ func main() {
 		Handler:      mux,
 		Addr:         serverHost,
 	}
-	logger.Fatal(srv.ListenAndServe())
+	log.Fatal(srv.ListenAndServe())
 }
