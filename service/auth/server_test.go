@@ -122,7 +122,7 @@ func (ss *stubStoreSlice) LoadUserByLogin(u *auth.User) (err error) {
 
 //  refactor similarity
 func TestJWTServerIssueTokenNewUser(t *testing.T) {
-	logger, hook := test.NewNullLogger()
+	log, hook := test.NewNullLogger()
 	secret := []byte("verysecret")
 	issuer := "verycool"
 	expire := time.Hour
@@ -131,7 +131,7 @@ func TestJWTServerIssueTokenNewUser(t *testing.T) {
 		js, err := auth.NewJWTServer(
 			storage,
 			secret,
-			auth.WithLogger(logger),
+			auth.WithLogger(log),
 			auth.WithIssuer(issuer),
 			auth.WithExpiration(expire),
 		)
@@ -156,7 +156,7 @@ func TestJWTServerIssueTokenNewUser(t *testing.T) {
 }
 
 func TestJWTServerIssueTokenExistingUser(t *testing.T) {
-	logger, hook := test.NewNullLogger()
+	log, hook := test.NewNullLogger()
 	secret := []byte("verysecret")
 	issuer := "verycool"
 	expire := time.Hour
@@ -165,7 +165,7 @@ func TestJWTServerIssueTokenExistingUser(t *testing.T) {
 		js, err := auth.NewJWTServer(
 			storage,
 			secret,
-			auth.WithLogger(logger),
+			auth.WithLogger(log),
 			auth.WithIssuer(issuer),
 			auth.WithExpiration(expire),
 		)

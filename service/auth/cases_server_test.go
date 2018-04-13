@@ -47,7 +47,7 @@ var examplesJWTServerIssueTokenNewUser = []struct {
 		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
 		map[string]string{"login": "login3"},
 		want{
-			body:       `{"error":"Wrong credentials"}`,
+			body:       `{"error":"Bad credentials"}`,
 			statusCode: http.StatusUnprocessableEntity,
 			logMessage: "",
 		},
@@ -58,7 +58,7 @@ var examplesJWTServerIssueTokenNewUser = []struct {
 		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
 		map[string]string{"password": "password3"},
 		want{
-			body:       `{"error":"Wrong credentials"}`,
+			body:       `{"error":"Bad credentials"}`,
 			statusCode: http.StatusUnprocessableEntity,
 			logMessage: "",
 		},
@@ -109,7 +109,7 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
 		map[string]string{"login": "login1"},
 		want{
-			body:       `{"error":"Wrong credentials"}`,
+			body:       `{"error":"Bad credentials"}`,
 			statusCode: http.StatusUnauthorized,
 			logMessage: "",
 		},
@@ -120,7 +120,7 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
 		map[string]string{"password": "password1"},
 		want{
-			body:       `{"error":"Wrong credentials"}`,
+			body:       `{"error":"Bad credentials"}`,
 			statusCode: http.StatusUnauthorized,
 			logMessage: "",
 		},
@@ -131,7 +131,7 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
 		map[string]string{"login": "login3", "password": "password3"},
 		want{
-			body:       `{"error":"Wrong credentials"}`,
+			body:       `{"error":"Bad credentials"}`,
 			statusCode: http.StatusUnauthorized,
 			logMessage: "",
 		},
@@ -142,7 +142,7 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
 		map[string]string{"login": "login1", "password": "password3"},
 		want{
-			body:       `{"error":"Wrong credentials"}`,
+			body:       `{"error":"Bad credentials"}`,
 			statusCode: http.StatusUnauthorized,
 			logMessage: "",
 		},

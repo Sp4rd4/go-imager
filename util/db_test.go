@@ -50,7 +50,7 @@ func subTestInvalidMigrationFolder(t *testing.T, dbAddress string) {
 		db, err := util.OpenDB(dbAddress, "migrationsFolder")
 		if assert.NotNil(t, err, "OpenDB should return error for missing migrations folder") {
 			if assert.NotNil(t, db, "OpenDB shouldn't return nil *sqlx.DB for missing migrations folder") {
-				util.CloseAndCheckTest(t, db)
+				util.CloseAndCheck(db, t)
 			}
 		}
 	})

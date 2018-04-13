@@ -116,7 +116,8 @@
 [[projects]]
   name = "github.com/sergi/go-diff"
   packages = ["diffmatchpatch"]
-  revision = "97b2266dfe4bd4ea1b81a463322f04f8b724801e"
+  revision = "1744e2970ca51c86172c8190fadad617561ed6e7"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -137,13 +138,20 @@
   version = "v1.2.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/valyala/bytebufferpool"
+  packages = ["."]
+  revision = "e746df99fe4a3986f4d4f79e13c1e0117ce9c2f7"
+
+[[projects]]
+  branch = "master"
   name = "github.com/valyala/fasthttp"
   packages = [
     ".",
-    "fasthttputil"
+    "fasthttputil",
+    "stackless"
   ]
-  revision = "d42167fd04f636e20b005e9934159e95454233c7"
-  version = "v20160617"
+  revision = "e5f51c11919d4f66400334047b897ef0a94c6f3c"
 
 [[projects]]
   branch = "master"
@@ -179,9 +187,10 @@
   version = "1.0.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/yudai/golcs"
   packages = ["."]
-  revision = "d1c525dea8ce39ea9a783d33cf08932305373f2c"
+  revision = "ecda9a501e8220fae3b4b600c3db4b0ba22cfc68"
 
 [[projects]]
   name = "goji.io"
@@ -252,6 +261,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cd1b5cac514df0dbe71ba602b46f6426530a4b0eed457f56f8f66cb67db0488b"
+  inputs-digest = "c580a9be6981c790a086cd97640def92a7987fa04a4b83ea431b676b20254558"
   solver-name = "gps-cdcl"
   solver-version = 1

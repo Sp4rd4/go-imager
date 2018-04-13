@@ -121,7 +121,7 @@ func (ss stubStoreNil) LoadImages(_ *[]imgr.Image, _, _, _ uint64) (err error) {
 }
 
 func TestLocalImageServerPostImage(t *testing.T) {
-	logger, hook := test.NewNullLogger()
+	log, hook := test.NewNullLogger()
 	for _, ex := range examplesLocalImageServerPostImage {
 		staticPath, err := ioutil.TempDir("", "static")
 		if err != nil {
@@ -129,7 +129,7 @@ func TestLocalImageServerPostImage(t *testing.T) {
 		}
 		is, err := imgr.NewLocalImageServer(
 			stubStoreNil(ex.storage),
-			imgr.WithLogger(logger),
+			imgr.WithLogger(log),
 			imgr.WithStaticFolder(staticPath),
 		)
 		if err != nil {
@@ -256,11 +256,11 @@ func (ss stubStoreSlice) LoadImages(in *[]imgr.Image, _, _, _ uint64) (err error
 }
 
 func TestLocalImageServerListImages(t *testing.T) {
-	logger, hook := test.NewNullLogger()
+	log, hook := test.NewNullLogger()
 	for _, ex := range examplesLocalImageServerListImages {
 		is, err := imgr.NewLocalImageServer(
 			stubStoreSlice(ex.storage),
-			imgr.WithLogger(logger),
+			imgr.WithLogger(log),
 		)
 		if err != nil {
 			t.Fatal(err)

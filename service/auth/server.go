@@ -115,7 +115,7 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 	requestLogger := js.log.WithFields(log.Fields{"request_id": requestID})
 
 	if r.FormValue("login") == "" || r.FormValue("password") == "" {
-		util.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"Wrong credentials"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"Bad credentials"}`, requestLogger)
 		return
 	}
 	user := &User{Login: r.FormValue("login")}
@@ -166,14 +166,14 @@ func (js *JWTServer) IssueTokenExistingUser(w http.ResponseWriter, r *http.Reque
 	requestLogger := js.log.WithFields(log.Fields{"request_id": requestID})
 
 	if r.FormValue("password") == "" || r.FormValue("login") == "" {
-		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`, requestLogger)
 		return
 	}
 
 	user := &User{Login: r.FormValue("login")}
 	err := js.storage.LoadUserByLogin(user)
 	if err == sql.ErrNoRows || !CheckPasswordHash(r.FormValue("password"), user.PasswordHash) {
-		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Wrong credentials"}`, requestLogger)
+		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`, requestLogger)
 		return
 	}
 	if err != nil {

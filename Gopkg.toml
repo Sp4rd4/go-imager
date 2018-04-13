@@ -38,6 +38,12 @@
   branch = "v1"
   name = "gopkg.in/gavv/httpexpect.v1"
 
+# Fix httpexpect dependencies
+[[override]]
+  branch = "master"
+  name = "github.com/valyala/fasthttp"
+
+
 [prune]
   go-tests = true
   unused-packages = true
