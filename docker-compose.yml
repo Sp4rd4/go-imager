@@ -1,22 +1,22 @@
 version: '3.6'
 
 services:
-  images:
+  imgr:
     build:
       context: .
-      target: images
+      target: imgr
     restart: unless-stopped
-    command: sh -c './wait-for postgres_images:5432 -- ./app'
+    command: sh -c './wait-for postgres_imgr:5432 -- ./app'
     expose:
       - 3000
     depends_on:
-      - postgres_images
+      - postgres_imgr
     volumes:
       - ./wait-for:./wait-for
       - static:/static
     env_file:
       - .env.common
-      - .env.images
+      - .env.imgr
 
   auth:
     build:
@@ -41,7 +41,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - images
+      - imgr
       - auth
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -56,17 +56,17 @@ services:
       POSTGRES_PASSWORD: 'postgres'
       POSTGRES_DB: 'auth'
 
-  postgres_images:
+  postgres_imgr:
     image: postgres:10.3-alpine
     restart: unless-stopped
     volumes:
-      - db_images:/var/lib/postgresql/data
+      - db_imgr:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
-      POSTGRES_DB: 'images'
+      POSTGRES_DB: 'imgr'
 
 volumes:
-  db_images:
+  db_imgr:
   db_auth:
   static:

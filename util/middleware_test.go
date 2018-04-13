@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/sp4rd4/go-imager/util"
 
 	"github.com/oklog/ulid"
 

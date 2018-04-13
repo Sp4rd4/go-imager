@@ -15,8 +15,12 @@ func TestDBAddImage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer util.CleanDB(t, db)
 	imgDB := &imgr.DB{DB: db}
+
 	for _, ex := range examplesDBAddImage {
+		defer cleanTable(t, imgDB)
+
 		t.Run(ex.name, func(t *testing.T) {
 			var err error
 			for _, img := range ex.input {
@@ -25,10 +29,8 @@ func TestDBAddImage(t *testing.T) {
 				}
 			}
 			assert.EqualValues(t, ex.wantErr, err, "Error should be as expected")
-			cleanTable(t, imgDB)
 		})
 	}
-	util.CleanDB(t, db)
 }
 
 func TestDBLoadImages(t *testing.T) {
@@ -36,8 +38,12 @@ func TestDBLoadImages(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer util.CleanDB(t, db)
 	imgDB := &imgr.DB{DB: db}
+
 	for _, ex := range examplesDBLoadImages {
+		defer cleanTable(t, imgDB)
+
 		t.Run(ex.name, func(t *testing.T) {
 			for _, img := range ex.initial {
 				err = imgDB.AddImage(&img)
@@ -55,10 +61,8 @@ func TestDBLoadImages(t *testing.T) {
 					t.Errorf("Image %d is absent", i)
 				}
 			}
-			cleanTable(t, imgDB)
 		})
 	}
-	util.CleanDB(t, db)
 }
 
 func cleanTable(t *testing.T, db *imgr.DB) {

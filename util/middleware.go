@@ -84,7 +84,7 @@ func Logger(logger *log.Logger) func(http.Handler) http.Handler {
 }
 
 // CheckJWT middleware checks authorization header for JWT token, validates its signature and content,
-// then places images.User interface type into context for future use.
+// then places imgr.User interface type into context for future use.
 func CheckJWT(secret []byte, issuer string, logger *log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

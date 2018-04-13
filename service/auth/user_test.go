@@ -15,7 +15,11 @@ func TestDBCreateUser(t *testing.T) {
 		t.Fatal(err)
 	}
 	atDB := &auth.DB{DB: db}
+	defer util.CleanDB(t, db)
+
 	for _, ex := range examplesDBCreateUser {
+		defer cleanTable(t, atDB)
+
 		t.Run(ex.name, func(t *testing.T) {
 			var err error
 			expectedUsers := make([]*auth.User, len(ex.input))
@@ -33,15 +37,13 @@ func TestDBCreateUser(t *testing.T) {
 						assert.Equal(t, expectedUsers[i].Login, usr.Login, "User login should be as expected")
 						assert.Equal(t, expectedUsers[i].PasswordHash, usr.PasswordHash, "User password hash should be as expected")
 						assert.NotZero(t, usr.ID, "User password hash should be as expected")
-					} else {
-						assert.Equal(t, expectedUsers[i], usr, "User should be as expected")
+						return
 					}
+					assert.Equal(t, expectedUsers[i], usr, "User should be as expected")
 				}
 			}
-			cleanTable(t, atDB)
 		})
 	}
-	util.CleanDB(t, db)
 }
 
 func TestDBLoadUserByLogin(t *testing.T) {
@@ -50,12 +52,16 @@ func TestDBLoadUserByLogin(t *testing.T) {
 		t.Fatal(err)
 	}
 	atDB := &auth.DB{DB: db}
+	defer util.CleanDB(t, db)
+
 	for _, ex := range examplesDBLoadUserByLogin {
 		for _, usr := range ex.initial {
 			if err := atDB.CreateUser(usr); err != nil {
 				t.Fatal(err)
 			}
 		}
+		defer cleanTable(t, atDB)
+
 		t.Run(ex.name, func(t *testing.T) {
 			err := atDB.LoadUserByLogin(ex.user)
 			assert.Equal(t, ex.wantErr, err, "Error should be as expected")
@@ -63,14 +69,11 @@ func TestDBLoadUserByLogin(t *testing.T) {
 				assert.Equal(t, ex.want.Login, ex.user.Login, "User login should be as expected")
 				assert.Equal(t, ex.want.PasswordHash, ex.user.PasswordHash, "User password hash should be as expected")
 				assert.NotZero(t, ex.user.ID, "User password hash should be as expected")
-			} else {
-				assert.Equal(t, ex.want, ex.user, "User should be as expected")
+				return
 			}
-
-			cleanTable(t, atDB)
+			assert.Equal(t, ex.want, ex.user, "User should be as expected")
 		})
 	}
-	util.CleanDB(t, db)
 }
 
 func cleanTable(t *testing.T, db *auth.DB) {

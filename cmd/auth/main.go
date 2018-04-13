@@ -25,7 +25,7 @@ func main() {
 	migrationsFolder := os.Getenv("MIGRATIONS_FOLDER")
 	if migrationsFolder == "" {
 		var err error
-		migrationsFolder, err = filepath.Abs("./db/migrations/")
+		migrationsFolder, err = filepath.Abs("./migrations/")
 		if err != nil {
 			log.Fatal(err)
 		}

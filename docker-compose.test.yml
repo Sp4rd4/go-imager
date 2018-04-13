@@ -20,7 +20,7 @@ services:
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
-      POSTGRES_MULTIPLE_DATABASES: test,images,users
+      POSTGRES_MULTIPLE_DATABASES: test,imgr,auth
 
 volumes:
   db:

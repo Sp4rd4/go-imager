@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -216,11 +217,12 @@ func extractImage(r *http.Request, log *log.Entry) (*imageData, error) {
 	}
 
 	// http.DetectContentType specifies 512 as relevant data for type checking
-	if !strings.HasPrefix(http.DetectContentType(bs[:512]), "image/") {
-		return nil, errors.New("content type is incorrect")
+	ct := http.DetectContentType(bs[:512])
+	if !strings.HasPrefix(ct, "image/") {
+		return nil, fmt.Errorf("content type is incorrect, received %s", ct)
 	}
 
-	return &imageData{info.Filename, bs}, nil
+	return &imageData{filepath.Base(info.Filename), bs}, nil
 }
 
 func extracrtUserID(ctx context.Context) (uint64, error) {

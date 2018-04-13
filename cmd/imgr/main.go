@@ -15,7 +15,7 @@ import (
 
 func main() {
 	log.SetOutput(os.Stdout)
-	logger := log.New()
+	log := log.New()
 
 	dbAddress := os.Getenv("DATABASE_URL")
 	serverHost := os.Getenv("HOST")
@@ -26,9 +26,9 @@ func main() {
 	migrationsFolder := os.Getenv("MIGRATIONS_FOLDER")
 	if migrationsFolder == "" {
 		var err error
-		migrationsFolder, err = filepath.Abs("./db/migrations/")
+		migrationsFolder, err = filepath.Abs("./migrations/")
 		if err != nil {
-			logger.Fatal(err)
+			log.Fatal(err)
 		}
 	}
 
@@ -43,13 +43,13 @@ func main() {
 		duration, err := time.ParseDuration(timeoutVal)
 		durations[timeout] = duration
 		if err != nil {
-			logger.Fatal(err)
+			log.Fatal(err)
 		}
 	}
 
 	conn, err := util.OpenDB(dbAddress, migrationsFolder)
 	if err != nil {
-		util.CloseAndCheck(conn, logger)
+		util.CloseAndCheck(conn, log)
 		log.Fatal(err)
 	}
 	storage := &imgr.DB{DB: conn}
@@ -57,7 +57,7 @@ func main() {
 	imageServer, err := imgr.NewLocalImageServer(
 		storage,
 		imgr.WithStaticFolder(staticStoragePath),
-		imgr.WithLogger(logger),
+		imgr.WithLogger(log),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -66,9 +66,9 @@ func main() {
 	mux := goji.NewMux()
 	mux.HandleFunc(pat.Get("/images"), imageServer.ListImages)
 	mux.HandleFunc(pat.Post("/images"), imageServer.PostImage)
-	mux.Use(util.RequestID(logger))
-	mux.Use(util.Logger(logger))
-	mux.Use(util.CheckJWT([]byte(secret), issuer, logger))
+	mux.Use(util.RequestID(log))
+	mux.Use(util.Logger(log))
+	mux.Use(util.CheckJWT([]byte(secret), issuer, log))
 
 	srv := &http.Server{
 		ReadTimeout:  durations["HTTP_READ_TIMEOUT"],
