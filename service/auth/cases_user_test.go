@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/sp4rd4/go-imager/services/auth"
+	"github.com/sp4rd4/go-imager/service/auth"
 )
 
 var examplesDBCreateUser = []struct {

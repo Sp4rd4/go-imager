@@ -16,8 +16,8 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/sp4rd4/go-imager/services/auth"
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/service/auth"
+	"github.com/sp4rd4/go-imager/util"
 	"github.com/stretchr/testify/assert"
 )
 

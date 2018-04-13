@@ -19,8 +19,8 @@ CMD ./app
 
 FROM service as images
 COPY --from=compile-images /go/src/github.com/sp4rd4/go-imager/images ./app
-COPY --from=compile-images /go/src/github.com/sp4rd4/go-imager/services/images/migrations ./migrations
+COPY --from=compile-images /go/src/github.com/sp4rd4/go-imager/service/images/migrations ./migrations
 
 FROM service as auth
 COPY --from=compile-auth /go/src/github.com/sp4rd4/go-imager/auth ./app
-COPY --from=compile-auth /go/src/github.com/sp4rd4/go-imager/services/auth/migrations ./migrations
+COPY --from=compile-auth /go/src/github.com/sp4rd4/go-imager/service/auth/migrations ./migrations

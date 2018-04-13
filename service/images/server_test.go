@@ -22,8 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sp4rd4/go-imager/services/images"
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/service/images"
+	"github.com/sp4rd4/go-imager/util"
 )
 
 func TestNewLocalImageServer(t *testing.T) {

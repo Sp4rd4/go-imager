@@ -3,7 +3,7 @@ package images_test
 import (
 	"net/http"
 
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/util"
 )
 
 const (

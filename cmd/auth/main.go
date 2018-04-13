@@ -7,8 +7,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/sp4rd4/go-imager/services/auth"
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/service/auth"
+	"github.com/sp4rd4/go-imager/util"
 	goji "goji.io"
 	"goji.io/pat"
 )

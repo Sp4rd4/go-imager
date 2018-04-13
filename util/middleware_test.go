@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/sirupsen/logrus/hooks/test"
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/util"
 )
 
 func TestRequestID(t *testing.T) {

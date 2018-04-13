@@ -16,7 +16,7 @@ import (
 
 	"github.com/oklog/ulid"
 	log "github.com/sirupsen/logrus"
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/util"
 )
 
 // ImageServer defines interface for service that can list and process uploaded images.

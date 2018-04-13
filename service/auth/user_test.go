@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sp4rd4/go-imager/services/auth"
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/service/auth"
+	"github.com/sp4rd4/go-imager/util"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -3,7 +3,7 @@ package images_test
 import (
 	"errors"
 
-	"github.com/sp4rd4/go-imager/services/images"
+	"github.com/sp4rd4/go-imager/service/images"
 )
 
 var examplesDBAddImage = []struct {

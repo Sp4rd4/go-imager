@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/sp4rd4/go-imager/utils"
+	"github.com/sp4rd4/go-imager/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +26,7 @@ func TestOpenDB(t *testing.T) {
 
 	subTestInvalidURL(t)
 	subTestInvalidMigrationFolder(t, dbAddress)
-	subTestsValidMigrations(t, dbAddress)
+	subTestValidMigrations(t, dbAddress)
 	subTestInvalidMigrations(t, dbAddress)
 }
 
