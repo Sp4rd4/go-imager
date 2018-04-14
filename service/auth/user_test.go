@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -57,12 +58,14 @@ func TestDBLoadUserByLogin(t *testing.T) {
 	for _, ex := range examplesDBLoadUserByLogin {
 		for _, usr := range ex.initial {
 			if err := atDB.CreateUser(usr); err != nil {
+				fmt.Println(ex)
 				t.Fatal(err)
 			}
 		}
-		defer cleanTable(t, atDB)
 
 		t.Run(ex.name, func(t *testing.T) {
+			defer cleanTable(t, atDB)
+
 			err := atDB.LoadUserByLogin(ex.user)
 			assert.Equal(t, ex.wantErr, err, "Error should be as expected")
 			if err == nil && ex.user != nil && ex.want != nil {

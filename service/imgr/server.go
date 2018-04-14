@@ -206,7 +206,7 @@ func extractImage(r *http.Request, log *log.Entry) (*imageData, error) {
 		return nil, err
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
+		if err = file.Close(); err != nil {
 			log.Error(err)
 		}
 	}()

@@ -104,7 +104,7 @@ func (ss *stubStoreSlice) CreateUser(u *auth.User) (err error) {
 	}
 	u.ID = uint64(len(ss.users)) + 1
 	ss.users = append(ss.users, u)
-	return
+	return err
 }
 
 func (ss *stubStoreSlice) LoadUserByLogin(u *auth.User) (err error) {
@@ -114,19 +114,19 @@ func (ss *stubStoreSlice) LoadUserByLogin(u *auth.User) (err error) {
 	for _, usr := range ss.users {
 		if u.Login == usr.Login {
 			*u = *usr
-			return
+			return err
 		}
 	}
 	return sql.ErrNoRows
 }
 
 //  refactor similarity
-func TestJWTServerIssueTokenNewUser(t *testing.T) {
+func TestJWTServerIssueToken(t *testing.T) {
 	log, hook := test.NewNullLogger()
 	secret := []byte("verysecret")
 	issuer := "verycool"
 	expire := time.Hour
-	for _, ex := range examplesJWTServerIssueTokenNewUser {
+	for _, ex := range examplesJWTServerIssueToken {
 		storage := &stubStoreSlice{[]*auth.User{}, ex.storage}
 		js, err := auth.NewJWTServer(
 			storage,
@@ -144,41 +144,11 @@ func TestJWTServerIssueTokenNewUser(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		t.Run(ex.name, func(t *testing.T) {
-			js.IssueTokenNewUser(w, req)
-			if ex.body == "" {
-				assertOKResponse(t, w.Body.Bytes(), secret, issuer)
-				return
+			if ex.new {
+				js.IssueTokenNewUser(w, req)
+			} else {
+				js.IssueTokenExistingUser(w, req)
 			}
-			assertBadResponse(t, hook, w, ex.want)
-			hook.Reset()
-		})
-	}
-}
-
-func TestJWTServerIssueTokenExistingUser(t *testing.T) {
-	log, hook := test.NewNullLogger()
-	secret := []byte("verysecret")
-	issuer := "verycool"
-	expire := time.Hour
-	for _, ex := range examplesJWTServerIssueTokenExistingUser {
-		storage := &stubStoreSlice{[]*auth.User{}, ex.storage}
-		js, err := auth.NewJWTServer(
-			storage,
-			secret,
-			auth.WithLogger(log),
-			auth.WithIssuer(issuer),
-			auth.WithExpiration(expire),
-		)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		prepareStorage(t, ex.initial, storage)
-		req := generateRequest(t, ex.requestForm)
-		w := httptest.NewRecorder()
-
-		t.Run(ex.name, func(t *testing.T) {
-			js.IssueTokenExistingUser(w, req)
 			if ex.body == "" {
 				assertOKResponse(t, w.Body.Bytes(), secret, issuer)
 				return

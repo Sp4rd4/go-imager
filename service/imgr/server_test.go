@@ -247,12 +247,12 @@ func (ss stubStoreSlice) LoadImages(in *[]imgr.Image, _, _, _ uint64) (err error
 		err = errors.New("storage error")
 	} else {
 		*in = []imgr.Image{
-			imgr.Image{Filename: "filename1", UserID: 1},
-			imgr.Image{Filename: "filename2", UserID: 1},
-			imgr.Image{Filename: "filename3", UserID: 1},
+			{Filename: "filename1", UserID: 1},
+			{Filename: "filename2", UserID: 1},
+			{Filename: "filename3", UserID: 1},
 		}
 	}
-	return
+	return err
 }
 
 func TestLocalImageServerListImages(t *testing.T) {

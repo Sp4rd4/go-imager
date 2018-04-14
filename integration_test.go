@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus/hooks/test"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	goji "goji.io"
 	"goji.io/pat"
@@ -154,10 +154,12 @@ func multipleUsersAuthUploadList(t *testing.T, authExpect, imgrExpect *httpexpec
 	token := authResp.Value("token_type").String().Raw() + " " + authResp.Value("access_token").String().Raw()
 
 	// Post images for first user
-	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "login1")).WithHeader("Authorization", token).
+	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "login1")).
+		WithHeader("Authorization", token).
 		Expect().
 		Status(http.StatusCreated).NoContent()
-	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "login1")).WithHeader("Authorization", token).
+	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "login1")).
+		WithHeader("Authorization", token).
 		Expect().
 		Status(http.StatusCreated).NoContent()
 
@@ -169,7 +171,8 @@ func multipleUsersAuthUploadList(t *testing.T, authExpect, imgrExpect *httpexpec
 	token = authResp.Value("token_type").String().Raw() + " " + authResp.Value("access_token").String().Raw()
 
 	// Post image for second user
-	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "login2")).WithHeader("Authorization", token).
+	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "login2")).
+		WithHeader("Authorization", token).
 		Expect().
 		Status(http.StatusCreated).NoContent()
 
@@ -232,16 +235,20 @@ func singleUserAuthUploadList(t *testing.T, authExpect, imgrExpect *httpexpect.E
 	imgResp.Array().Length().Equal(0)
 
 	// Post images for user
-	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "first")).WithHeader("Authorization", token).
+	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "first")).
+		WithHeader("Authorization", token).
 		Expect().
 		Status(http.StatusCreated).NoContent()
-	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "second")).WithHeader("Authorization", token).
+	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "second")).
+		WithHeader("Authorization", token).
 		Expect().
 		Status(http.StatusCreated).NoContent()
-	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "third")).WithHeader("Authorization", token).
+	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "third")).
+		WithHeader("Authorization", token).
 		Expect().
 		Status(http.StatusCreated).NoContent()
-	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "fourth")).WithHeader("Authorization", token).
+	imgrExpect.POST("/images").WithMultipart().WithFile("image", createImage(t, folder, "fourth")).
+		WithHeader("Authorization", token).
 		Expect().
 		Status(http.StatusCreated).NoContent()
 

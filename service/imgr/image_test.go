@@ -42,15 +42,16 @@ func TestDBLoadImages(t *testing.T) {
 	imgDB := &imgr.DB{DB: db}
 
 	for _, ex := range examplesDBLoadImages {
-		defer cleanTable(t, imgDB)
+		for _, img := range ex.initial {
+			err = imgDB.AddImage(&img)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
 
 		t.Run(ex.name, func(t *testing.T) {
-			for _, img := range ex.initial {
-				err = imgDB.AddImage(&img)
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
+			defer cleanTable(t, imgDB)
+
 			imgs := make([]imgr.Image, 0)
 			err := imgDB.LoadImages(&imgs, ex.limit, ex.offset, ex.userID)
 			assert.EqualValues(t, ex.wantErr, err, "Error should be as expected")

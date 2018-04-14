@@ -14,26 +14,29 @@ type user struct {
 	password string
 }
 
-var examplesJWTServerIssueTokenNewUser = []struct {
+var examplesJWTServerIssueToken = []struct {
 	name        string
+	new         bool
 	storage     bool
 	initial     []*user
 	requestForm map[string]string
 	want
 }{
 	{
-		"OK",
+		"New OK",
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		true,
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login3", "password": "password3"},
 		want{
 			statusCode: http.StatusCreated,
 		},
 	},
 	{
-		"Bad storage",
+		"New Bad storage",
+		true,
 		false,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login1", "password": "password1"},
 		want{
 			body:       `{"error":"Internal server error"}`,
@@ -42,9 +45,10 @@ var examplesJWTServerIssueTokenNewUser = []struct {
 		},
 	},
 	{
-		"No password",
+		"New No password",
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		true,
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login3"},
 		want{
 			body:       `{"error":"Bad credentials"}`,
@@ -53,9 +57,10 @@ var examplesJWTServerIssueTokenNewUser = []struct {
 		},
 	},
 	{
-		"No login",
+		"New No login",
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		true,
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"password": "password3"},
 		want{
 			body:       `{"error":"Bad credentials"}`,
@@ -64,9 +69,10 @@ var examplesJWTServerIssueTokenNewUser = []struct {
 		},
 	},
 	{
-		"Login taken",
+		"New Login taken",
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		true,
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login1", "password": "password3"},
 		want{
 			body:       `{"error":"Login already taken"}`,
@@ -74,28 +80,21 @@ var examplesJWTServerIssueTokenNewUser = []struct {
 			logMessage: "",
 		},
 	},
-}
-
-var examplesJWTServerIssueTokenExistingUser = []struct {
-	name        string
-	storage     bool
-	initial     []*user
-	requestForm map[string]string
-	want
-}{
 	{
-		"OK",
+		"Existing OK",
+		false,
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login1", "password": "password1"},
 		want{
 			statusCode: http.StatusCreated,
 		},
 	},
 	{
-		"Bad storage",
+		"Existing Bad storage",
 		false,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		false,
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login1", "password": "password1"},
 		want{
 			body:       `{"error":"Internal server error"}`,
@@ -104,9 +103,10 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		},
 	},
 	{
-		"No password",
+		"Existing No password",
+		false,
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login1"},
 		want{
 			body:       `{"error":"Bad credentials"}`,
@@ -115,9 +115,10 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		},
 	},
 	{
-		"No login",
+		"Existing No login",
+		false,
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"password": "password1"},
 		want{
 			body:       `{"error":"Bad credentials"}`,
@@ -126,9 +127,10 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		},
 	},
 	{
-		"Login not in storage",
+		"Existing Login not in storage",
+		false,
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login3", "password": "password3"},
 		want{
 			body:       `{"error":"Bad credentials"}`,
@@ -137,9 +139,10 @@ var examplesJWTServerIssueTokenExistingUser = []struct {
 		},
 	},
 	{
-		"Wrong passwords",
+		"Existing Wrong passwords",
+		false,
 		true,
-		[]*user{&user{password: "password1", login: "login1"}, &user{password: "password2", login: "login2"}},
+		[]*user{{password: "password1", login: "login1"}, {password: "password2", login: "login2"}},
 		map[string]string{"login": "login1", "password": "password3"},
 		want{
 			body:       `{"error":"Bad credentials"}`,
