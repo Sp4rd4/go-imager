@@ -6,21 +6,31 @@ services:
       context: .
       target: build
     depends_on:
-      - postgres
+      - imgr_db
+      - auth_db
     volumes:
-    - ./wait-for:./wait-for
+    - ./wait-for:/wait-for
     env_file:
       - .env.test
 
-  postgres:
+  imgr_db:
     image: postgres:10.3-alpine
     volumes:
-      - db:/var/lib/postgresql/data
-      - ./multiple-db:/docker-entrypoint-initdb.d
+      - imgr_db:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
-      POSTGRES_MULTIPLE_DATABASES: test,imgr,auth
+      POSTGRES_DB: imgr
+
+  auth_db:
+    image: postgres:10.3-alpine
+    volumes:
+      - auth_db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_DB: auth
 
 volumes:
-  db:
+  imgr_db:
+  auth_db:
