@@ -151,7 +151,8 @@ func (is *LocalImageServer) PostImage(w http.ResponseWriter, r *http.Request) {
 		Filename: filename,
 		UserID:   userID,
 	}
-	if err = is.storage.AddImage(image); err != nil {
+	if err = is.storage.CreateImage(image); err != nil {
+		// Due to ulid part in filename, unique index conflicts are treated as exceptional situations
 		if errU, ok := err.(ErrUniqueIndexConflict); ok {
 			requestLogger.Error(errU)
 			util.JSONResponse(w, http.StatusConflict, `{"error":"Image filename is taken"}`, requestLogger)
@@ -216,10 +217,10 @@ func extractImage(r *http.Request, log *log.Entry) (*imageData, error) {
 		return nil, err
 	}
 
-	// http.DetectContentType specifies 512 as relevant data for type checking
+	// http.DetectContentType specifies only first 512 bytes as relevant data for type checking
 	ct := http.DetectContentType(bs[:512])
 	if !strings.HasPrefix(ct, "image/") {
-		return nil, fmt.Errorf("content type is incorrect, received %s", ct)
+		return nil, fmt.Errorf("content type is incorrect, received %s, should be image", ct)
 	}
 
 	return &imageData{filepath.Base(info.Filename), bs}, nil

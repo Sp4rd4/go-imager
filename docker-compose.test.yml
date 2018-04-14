@@ -8,8 +8,6 @@ services:
     depends_on:
       - imgr_db
       - auth_db
-    volumes:
-    - ./wait-for:/wait-for
     env_file:
       - .env.test
 

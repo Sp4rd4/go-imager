@@ -61,6 +61,7 @@ func TestCheckJWT(t *testing.T) {
 	ctx := context.WithValue(req.Context(), util.RequestIDKey, "requestID")
 	req = req.WithContext(ctx)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
 	for _, ex := range examplesJWT {
 		var token string
 		if ex.request != nil {

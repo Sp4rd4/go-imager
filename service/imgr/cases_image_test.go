@@ -6,30 +6,30 @@ import (
 	"github.com/sp4rd4/go-imager/service/imgr"
 )
 
-var examplesDBAddImage = []struct {
+var examplesDBCreateImage = []struct {
 	name    string
 	input   []*imgr.Image
 	wantErr error
 }{
 	{
-		"Single valid",
-		[]*imgr.Image{{Filename: "filename", UserID: 1}},
-		nil,
+		name:    "Single valid",
+		input:   []*imgr.Image{{Filename: "filename", UserID: 1}},
+		wantErr: nil,
 	},
 	{
-		"Duplicate image",
-		[]*imgr.Image{{Filename: "filename", UserID: 1}, {Filename: "filename", UserID: 1}},
-		imgr.ErrUniqueIndexConflict("images"),
+		name:    "Duplicate image",
+		input:   []*imgr.Image{{Filename: "filename", UserID: 1}, {Filename: "filename", UserID: 1}},
+		wantErr: imgr.ErrUniqueIndexConflict("images"),
 	},
 	{
-		"Missing image",
-		[]*imgr.Image{nil},
-		errors.New("image required"),
+		name:    "Missing image",
+		input:   []*imgr.Image{nil},
+		wantErr: errors.New("image required"),
 	},
 	{
-		"Incorrect image",
-		[]*imgr.Image{{Filename: "", UserID: 1}},
-		errors.New("image filename required"),
+		name:    "Incorrect image",
+		input:   []*imgr.Image{{Filename: "", UserID: 1}},
+		wantErr: errors.New("image filename required"),
 	},
 }
 
@@ -43,63 +43,63 @@ var examplesDBLoadImages = []struct {
 	wantErr error
 }{
 	{
-		"Two records",
-		[]imgr.Image{
+		name: "Two records",
+		initial: []imgr.Image{
 			{Filename: "filename1", UserID: 1},
 			{Filename: "filename2", UserID: 1},
 			{Filename: "filename3", UserID: 2},
 		},
-		0,
-		0,
-		1,
-		[]imgr.Image{
+		limit:  0,
+		offset: 0,
+		userID: 1,
+		want: []imgr.Image{
 			{Filename: "filename1", UserID: 1},
 			{Filename: "filename2", UserID: 1},
 		},
-		nil,
+		wantErr: nil,
 	},
 	{
-		"Three records with limit 1",
-		[]imgr.Image{
+		name: "Three records with limit 1",
+		initial: []imgr.Image{
 			{Filename: "filename1", UserID: 1},
 			{Filename: "filename3", UserID: 2},
 			{Filename: "filename4", UserID: 1},
 		},
-		1,
-		0,
-		1,
-		[]imgr.Image{{Filename: "filename1", UserID: 1}},
-		nil,
+		limit:   1,
+		offset:  0,
+		userID:  1,
+		want:    []imgr.Image{{Filename: "filename1", UserID: 1}},
+		wantErr: nil,
 	},
 	{
-		"Two records with limit 2 and offset 1",
-		[]imgr.Image{
+		name: "Two records with limit 2 and offset 1",
+		initial: []imgr.Image{
 			{Filename: "filename1", UserID: 1},
 			{Filename: "filename2", UserID: 1},
 			{Filename: "filename3", UserID: 2},
 			{Filename: "filename4", UserID: 1},
 		},
-		2,
-		1,
-		1,
-		[]imgr.Image{
+		limit:  2,
+		offset: 1,
+		userID: 1,
+		want: []imgr.Image{
 			{Filename: "filename2", UserID: 1},
 			{Filename: "filename4", UserID: 1},
 		},
-		nil,
+		wantErr: nil,
 	},
 	{
-		"No records",
-		[]imgr.Image{
+		name: "No records",
+		initial: []imgr.Image{
 			{Filename: "filename1", UserID: 3},
 			{Filename: "filename2", UserID: 4},
 			{Filename: "filename3", UserID: 2},
 			{Filename: "filename4", UserID: 5},
 		},
-		2,
-		1,
-		1,
-		[]imgr.Image{},
-		nil,
+		limit:   2,
+		offset:  1,
+		userID:  1,
+		want:    []imgr.Image{},
+		wantErr: nil,
 	},
 }

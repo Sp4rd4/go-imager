@@ -19,9 +19,9 @@ func TestDBCreateUser(t *testing.T) {
 	defer util.CleanDB(t, db)
 
 	for _, ex := range examplesDBCreateUser {
-		defer cleanTable(t, atDB)
-
 		t.Run(ex.name, func(t *testing.T) {
+			defer cleanTable(t, atDB)
+
 			var err error
 			expectedUsers := make([]*auth.User, len(ex.input))
 			for i, usr := range ex.input {
@@ -31,6 +31,7 @@ func TestDBCreateUser(t *testing.T) {
 					err = errA
 				}
 			}
+
 			assert.EqualValues(t, ex.wantErr, err, "Error should be as expected")
 			if err == nil {
 				for i, usr := range ex.input {

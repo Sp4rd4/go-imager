@@ -1,6 +1,6 @@
 {
 	"Enable": [
-		"lll", "unparam", "megacheck","nakedret", "dupl","maligned", "deadcode", "errcheck", "gas",
+		"lll", "unparam", "megacheck","nakedret","maligned", "deadcode", "errcheck", "gas",
 		"goconst", "gocyclo", "gofmt", "goimports", "golint", "gotype", "gotypex", "ineffassign", "interfacer",
 		"megacheck", "structcheck","unconvert", "varcheck", "vet", "vetshadow"
 	],

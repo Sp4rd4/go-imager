@@ -110,7 +110,7 @@ func TestLocalImageServerWithLogger(t *testing.T) {
 
 type stubStoreNil bool
 
-func (ss stubStoreNil) AddImage(_ *imgr.Image) (err error) {
+func (ss stubStoreNil) CreateImage(_ *imgr.Image) (err error) {
 	if !ss {
 		err = errors.New("storage error")
 	}
@@ -127,6 +127,7 @@ func TestLocalImageServerPostImage(t *testing.T) {
 		if err != nil {
 			t.Fatal("Unable to create temp dir")
 		}
+
 		is, err := imgr.NewLocalImageServer(
 			stubStoreNil(ex.storage),
 			imgr.WithLogger(log),
@@ -141,11 +142,14 @@ func TestLocalImageServerPostImage(t *testing.T) {
 		} else {
 			os.RemoveAll(staticPath)
 		}
+
 		req := generateRequest(t, ex.requestPost.file, ex.requestPost.context)
 		w := httptest.NewRecorder()
 
 		t.Run(ex.name, func(t *testing.T) {
 			is.PostImage(w, req)
+
+			// Check log message if there's expected one
 			if len(ex.want.logMessage) > 0 && assert.Equal(t, 1, len(hook.Entries), "Should have log entry") {
 				assert.Regexp(
 					t,
@@ -155,6 +159,7 @@ func TestLocalImageServerPostImage(t *testing.T) {
 				)
 			}
 
+			// Check response
 			assert.Equal(t, ex.want.statusCode, w.Result().StatusCode, "Incorrect response code")
 			b, err := ioutil.ReadAll(w.Result().Body)
 			w.Result().Body.Close()
@@ -172,15 +177,19 @@ func generateRequest(t *testing.T, fileType byte, contextVals map[util.RequestKe
 	var req *http.Request
 	var err error
 	if fileType == fileMissing {
+		// No file should be sent
 		req, err = http.NewRequest("POST", "", http.NoBody)
 		if err != nil {
 			t.Fatal(err)
 		}
 	} else {
+		// Create file
 		var file *os.File
 		body := &bytes.Buffer{}
 		multi := multipart.NewWriter(body)
 		defer multi.Close()
+
+		// createFile defines file content based on a byte const fileType
 		file, err = os.Open(createFile(t, fileType))
 		if err != nil {
 			t.Fatal(err)
@@ -197,7 +206,7 @@ func generateRequest(t *testing.T, fileType byte, contextVals map[util.RequestKe
 		if err != nil {
 			t.Fatal(err)
 		}
-		multi.Close()
+
 		req, err = http.NewRequest("POST", "", body)
 		if err != nil {
 			t.Fatal(err)
@@ -220,6 +229,7 @@ func createFile(t *testing.T, kind byte) string {
 		t.Fatal(err)
 	}
 	defer f.Close()
+
 	switch kind {
 	case fileNonImage:
 		_, err = f.WriteString("Text file content")
@@ -233,12 +243,13 @@ func createFile(t *testing.T, kind byte) string {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return filename
 }
 
 type stubStoreSlice bool
 
-func (ss stubStoreSlice) AddImage(_ *imgr.Image) (err error) {
+func (ss stubStoreSlice) CreateImage(_ *imgr.Image) (err error) {
 	return
 }
 
@@ -283,6 +294,8 @@ func TestLocalImageServerListImages(t *testing.T) {
 
 		t.Run(ex.name, func(t *testing.T) {
 			is.ListImages(w, req)
+
+			// Check log message if there's expected one
 			if len(ex.want.logMessage) > 0 && assert.Equal(t, 1, len(hook.Entries), "Should have log entry") {
 				assert.Regexp(
 					t,
@@ -292,12 +305,15 @@ func TestLocalImageServerListImages(t *testing.T) {
 				)
 			}
 
+			// Check response
 			assert.Equal(t, ex.want.statusCode, w.Result().StatusCode, "Incorrect response code")
 			b, err := ioutil.ReadAll(w.Result().Body)
 			w.Result().Body.Close()
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			// Empty expected body signals for correct json to be expected as body
 			if len(ex.want.body) > 0 {
 				assert.Regexp(t, ex.want.body, string(b), "Incorrect response body")
 			} else {

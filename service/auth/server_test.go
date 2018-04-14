@@ -22,7 +22,6 @@ import (
 )
 
 func TestNewJWTServer(t *testing.T) {
-
 	examples := []struct {
 		name    string
 		db      auth.Storage
@@ -144,7 +143,7 @@ func TestJWTServerIssueToken(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		t.Run(ex.name, func(t *testing.T) {
-			if ex.new {
+			if ex.newUser {
 				js.IssueTokenNewUser(w, req)
 			} else {
 				js.IssueTokenExistingUser(w, req)
@@ -174,11 +173,13 @@ func generateRequest(t *testing.T, formVals map[string]string) *http.Request {
 	for k, v := range formVals {
 		form.Set(k, v)
 	}
+
 	body := strings.NewReader(form.Encode())
 	req, err := http.NewRequest("POST", "", body)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	return req
 }
@@ -188,12 +189,14 @@ func assertOKResponse(t *testing.T, b, secret []byte, issuer string) {
 	if err := json.Unmarshal(b, resp); err != nil {
 		t.Fatal(err)
 	}
+
 	token, err := jwt.ParseWithClaims(resp.Token, &util.AuthTokenClaims{}, func(tkn *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
+
 	if assert.Nil(t, err, "No error on parsing should be present") {
 		claims, ok := token.Claims.(*util.AuthTokenClaims)
-		if assert.True(t, ok, "Claims shoud meet required type") && assert.True(t, token.Valid, "Token should be valid") {
+		if assert.True(t, ok, "Claims should meet required type") && assert.True(t, token.Valid, "Token should be valid") {
 			assert.True(t, claims.VerifyExpiresAt(time.Now().Unix(), true), "Token shouldn't be expired")
 			assert.True(t, claims.VerifyIssuer(issuer, true), "Token should have correct issuer")
 			assert.NotZero(t, claims.ID, "ID claim should be above zero")
@@ -210,6 +213,7 @@ func assertBadResponse(t *testing.T, hook *test.Hook, w *httptest.ResponseRecord
 			"Incorrect log entry message",
 		)
 	}
+
 	assert.Equal(t, want.statusCode, w.Result().StatusCode, "Incorrect response code")
 	b, err := ioutil.ReadAll(w.Result().Body)
 	w.Result().Body.Close()

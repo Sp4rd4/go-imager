@@ -12,7 +12,7 @@ import (
 
 // Storage interface defines storage methods needed by images service.
 type Storage interface {
-	AddImage(img *Image) error
+	CreateImage(img *Image) error
 	LoadImages(images *[]Image, limit, offset, userID uint64) error
 }
 
@@ -35,8 +35,8 @@ func (uic ErrUniqueIndexConflict) Error() string {
 	return "Conflict on unique index in table " + string(uic)
 }
 
-// AddImage insert Image into database.
-func (db *DB) AddImage(img *Image) error {
+// CreateImage insert Image into database.
+func (db *DB) CreateImage(img *Image) error {
 	if img == nil {
 		return errors.New("image required")
 	}

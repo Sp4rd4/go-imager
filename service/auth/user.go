@@ -41,8 +41,9 @@ func (db *DB) CreateUser(user *User) error {
 		return errors.New("user required")
 	}
 	if user.Login == "" || user.PasswordHash == "" {
-		return errors.New("user auth info required")
+		return errors.New("user fields required")
 	}
+
 	tx, err := db.Beginx()
 	if err != nil {
 		return err

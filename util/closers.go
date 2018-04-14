@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// added to generalize CloseAndCheck so it can use both *testing.T and *logrus.Logger
 type fatalist interface {
 	Fatal(args ...interface{})
 }

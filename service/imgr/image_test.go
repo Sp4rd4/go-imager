@@ -10,7 +10,7 @@ import (
 	"github.com/sp4rd4/go-imager/util"
 )
 
-func TestDBAddImage(t *testing.T) {
+func TestDBCreateImage(t *testing.T) {
 	db, err := util.OpenDB(os.Getenv("DATABASE_URL"), os.Getenv("MIGRATIONS_FOLDER"))
 	if err != nil {
 		t.Fatal(err)
@@ -18,13 +18,13 @@ func TestDBAddImage(t *testing.T) {
 	defer util.CleanDB(t, db)
 	imgDB := &imgr.DB{DB: db}
 
-	for _, ex := range examplesDBAddImage {
-		defer cleanTable(t, imgDB)
-
+	for _, ex := range examplesDBCreateImage {
 		t.Run(ex.name, func(t *testing.T) {
+			defer cleanTable(t, imgDB)
+
 			var err error
 			for _, img := range ex.input {
-				if errA := imgDB.AddImage(img); errA != nil {
+				if errA := imgDB.CreateImage(img); errA != nil {
 					err = errA
 				}
 			}
@@ -43,7 +43,7 @@ func TestDBLoadImages(t *testing.T) {
 
 	for _, ex := range examplesDBLoadImages {
 		for _, img := range ex.initial {
-			err = imgDB.AddImage(&img)
+			err = imgDB.CreateImage(&img)
 			if err != nil {
 				t.Fatal(err)
 			}

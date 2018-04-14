@@ -56,12 +56,15 @@ func NewJWTServer(storage Storage, secret []byte, options ...Option) (TokenServe
 	if err != nil {
 		return nil, err
 	}
+
 	js := &JWTServer{storage, log, secret, duration, "", util.RequestIDKey}
+
 	for _, option := range options {
 		if err := option(js); err != nil {
 			return nil, err
 		}
 	}
+
 	return js, nil
 }
 
@@ -118,7 +121,9 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 		util.JSONResponse(w, http.StatusUnprocessableEntity, `{"error":"Bad credentials"}`, requestLogger)
 		return
 	}
+
 	user := &User{Login: r.FormValue("login")}
+	// sql.ErrNoRows is expected as OK scenario return value, that signals that login is not taken
 	err := js.storage.LoadUserByLogin(user)
 	if err == nil {
 		util.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
@@ -142,6 +147,7 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: hash,
 	}
 	if err = js.storage.CreateUser(user); err != nil {
+		// Checking unique index error as this login may be be taken in concurrent handler
 		if _, ok := err.(ErrUniqueIndexConflict); ok {
 			util.JSONResponse(w, http.StatusConflict, `{"error":"Login already taken"}`, requestLogger)
 			return
@@ -151,7 +157,7 @@ func (js *JWTServer) IssueTokenNewUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = js.reponseJWTToken(user, w); err != nil {
+	if err = js.respondWithJWTToken(user, w); err != nil {
 		requestLogger.Error(err)
 		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
@@ -171,6 +177,7 @@ func (js *JWTServer) IssueTokenExistingUser(w http.ResponseWriter, r *http.Reque
 	}
 
 	user := &User{Login: r.FormValue("login")}
+	// nil error is expected as OK scenario return value, that signals that login is present in db
 	err := js.storage.LoadUserByLogin(user)
 	if err == sql.ErrNoRows || !CheckPasswordHash(r.FormValue("password"), user.PasswordHash) {
 		util.JSONResponse(w, http.StatusUnauthorized, `{"error":"Bad credentials"}`, requestLogger)
@@ -182,7 +189,7 @@ func (js *JWTServer) IssueTokenExistingUser(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := js.reponseJWTToken(user, w); err != nil {
+	if err := js.respondWithJWTToken(user, w); err != nil {
 		requestLogger.Error(err)
 		util.JSONResponse(w, http.StatusInternalServerError, `{"error":"Internal server error"}`, requestLogger)
 		return
@@ -201,7 +208,7 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func (js *JWTServer) reponseJWTToken(user *User, output http.ResponseWriter) error {
+func (js *JWTServer) respondWithJWTToken(user *User, output http.ResponseWriter) error {
 	expiresAt := time.Now().Add(js.tokenExpiration).Unix()
 	token := jwt.New(jwt.SigningMethodHS256)
 	token.Claims = &util.AuthTokenClaims{

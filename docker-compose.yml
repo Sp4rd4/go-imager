@@ -6,13 +6,12 @@ services:
       context: .
       target: imgr
     restart: unless-stopped
-    command: sh -c './wait-for postgres_imgr:5432 -- ./app'
+    command:  ./app
     expose:
       - 3000
     depends_on:
       - postgres_imgr
     volumes:
-      - ./wait-for:/wait-for
       - static:/static
     env_file:
       - .env.common
@@ -23,13 +22,11 @@ services:
       context: .
       target: auth
     restart: unless-stopped
-    command: sh -c './wait-for postgres_auth:5432 -- ./app'
+    command:  ./app
     expose:
       - 3000
     depends_on:
       - postgres_auth
-    volumes:
-      - ./wait-for:/wait-for
     env_file:
       - .env.common
       - .env.auth

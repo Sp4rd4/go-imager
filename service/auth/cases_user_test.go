@@ -13,34 +13,34 @@ var examplesDBCreateUser = []struct {
 	wantErr error
 }{
 	{
-		"Single valid",
-		[]*auth.User{{PasswordHash: "hash", Login: "login"}},
-		nil,
+		name:    "Single valid",
+		input:   []*auth.User{{PasswordHash: "hash", Login: "login"}},
+		wantErr: nil,
 	},
 	{
-		"Multiple valid",
-		[]*auth.User{{PasswordHash: "hash", Login: "login1"}, {PasswordHash: "hash", Login: "login2"}},
-		nil,
+		name:    "Multiple valid",
+		input:   []*auth.User{{PasswordHash: "hash", Login: "login1"}, {PasswordHash: "hash", Login: "login2"}},
+		wantErr: nil,
 	},
 	{
-		"Duplicate user",
-		[]*auth.User{{PasswordHash: "hash", Login: "login"}, {PasswordHash: "hash", Login: "login"}},
-		auth.ErrUniqueIndexConflict("users"),
+		name:    "Duplicate user",
+		input:   []*auth.User{{PasswordHash: "hash", Login: "login"}, {PasswordHash: "hash", Login: "login"}},
+		wantErr: auth.ErrUniqueIndexConflict("users"),
 	},
 	{
-		"Missing user",
-		[]*auth.User{nil},
-		errors.New("user required"),
+		name:    "Missing user",
+		input:   []*auth.User{nil},
+		wantErr: errors.New("user required"),
 	},
 	{
-		"Missing login",
-		[]*auth.User{{PasswordHash: "hash"}},
-		errors.New("user auth info required"),
+		name:    "Missing login",
+		input:   []*auth.User{{PasswordHash: "hash"}},
+		wantErr: errors.New("user fields required"),
 	},
 	{
-		"Missing password_hash",
-		[]*auth.User{{Login: "login"}},
-		errors.New("user auth info required"),
+		name:    "Missing password_hash",
+		input:   []*auth.User{{Login: "login"}},
+		wantErr: errors.New("user fields required"),
 	},
 }
 
@@ -52,47 +52,47 @@ var examplesDBLoadUserByLogin = []struct {
 	wantErr error
 }{
 	{
-		"OK",
-		[]*auth.User{
+		name: "OK",
+		initial: []*auth.User{
 			{PasswordHash: "hash", Login: "login1"},
 			{PasswordHash: "hash", Login: "login2"},
 			{PasswordHash: "hash", Login: "login3"},
 		},
-		&auth.User{Login: "login3"},
-		&auth.User{PasswordHash: "hash", Login: "login3"},
-		nil,
+		user:    &auth.User{Login: "login3"},
+		want:    &auth.User{PasswordHash: "hash", Login: "login3"},
+		wantErr: nil,
 	},
 	{
-		"Missing login",
-		[]*auth.User{
+		name: "Missing login",
+		initial: []*auth.User{
 			{PasswordHash: "hash", Login: "login1"},
 			{PasswordHash: "hash", Login: "login2"},
 			{PasswordHash: "hash", Login: "login3"},
 		},
-		&auth.User{Login: ""},
-		&auth.User{Login: ""},
-		sql.ErrNoRows,
+		user:    &auth.User{Login: ""},
+		want:    &auth.User{Login: ""},
+		wantErr: sql.ErrNoRows,
 	},
 	{
-		"Missing user",
-		[]*auth.User{
+		name: "Missing user",
+		initial: []*auth.User{
 			{PasswordHash: "hash", Login: "login1"},
 			{PasswordHash: "hash", Login: "login2"},
 			{PasswordHash: "hash", Login: "login3"},
 		},
-		nil,
-		nil,
-		errors.New("user required"),
+		user:    nil,
+		want:    nil,
+		wantErr: errors.New("user required"),
 	},
 	{
-		"login not in db",
-		[]*auth.User{
+		name: "login not in db",
+		initial: []*auth.User{
 			{PasswordHash: "hash", Login: "login1"},
 			{PasswordHash: "hash", Login: "login2"},
 			{PasswordHash: "hash", Login: "login3"},
 		},
-		&auth.User{Login: "login4"},
-		&auth.User{Login: "login4"},
-		sql.ErrNoRows,
+		user:    &auth.User{Login: "login4"},
+		want:    &auth.User{Login: "login4"},
+		wantErr: sql.ErrNoRows,
 	},
 }
